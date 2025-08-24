@@ -7,8 +7,13 @@ router = APIRouter(prefix='/jobs', tags=['jobs'])
 
 
 @router.get('/', response_model=List[JobResponse])
-async def get_all_jobs():
-    return await get_all_jobs_service()
+async def get_all_jobs(
+    min_salary: int | None = None,
+    max_salary: int | None = None,
+    location: str | None = None,
+    skill: str | None = None
+):
+    return await get_all_jobs_service(min_salary, max_salary, location, skill)
 
 @router.get('/{job_id}', response_model=JobResponse)
 async def get_job(job_id: int):

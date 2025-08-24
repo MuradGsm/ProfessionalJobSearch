@@ -5,6 +5,7 @@ class JobBase(BaseModel):
     description: str
     salary: float
     location: str
+    skill: str
 
 
 class JobResponse(JobBase):

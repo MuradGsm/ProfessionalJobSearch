@@ -1,7 +1,8 @@
-from fastapi import HTTPException, status
+from fastapi import HTTPException, status, Query
 from app.schemas.user_schema import UserResponse, UserBase
-from app.db.fake_db import users_db
-from typing import List
+from app.schemas.resume_schema import ResumeResponse
+from app.db.fake_db import users_db, resumes_db
+from typing import List, Optional
 
 async def get_all_users_service() -> List[UserResponse]:
     return users_db
@@ -22,3 +23,15 @@ async def create_user_service(user: UserBase) -> UserResponse:
     )
     users_db.append(new_user)
     return new_user
+
+async def search_candidates_service(skill: Optional[str] = None) -> List[ResumeResponse]:
+    if skill:
+        results = []
+        print('skill', skill)
+        for resume in resumes_db:
+            print("resume", resume)
+            skills_list = [s.strip().lower() for s in resume.skills.split(",")]
+            if skill.lower() in skills_list:
+                results.append(resume)
+        return results
+    return resumes_db
