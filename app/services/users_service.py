@@ -1,5 +1,5 @@
 from fastapi import HTTPException, status, Query
-from app.schemas.user_schema import UserResponse, UserBase
+from app.schemas.user_schema import UserResponse
 from app.schemas.resume_schema import ResumeResponse
 from app.db.fake_db import users_db, resumes_db
 from typing import List, Optional
@@ -13,16 +13,6 @@ async def get_user_service(user_id:int) -> UserResponse:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='User not found')
     return user
 
-async def create_user_service(user: UserBase) -> UserResponse:
-    new_id = len(users_db) + 1
-
-    new_user = UserResponse(
-        id = new_id,
-        name = user.name, 
-        role= user.role
-    )
-    users_db.append(new_user)
-    return new_user
 
 async def search_candidates_service(skill: Optional[str] = None) -> List[ResumeResponse]:
     if skill:

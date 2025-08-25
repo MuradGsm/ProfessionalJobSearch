@@ -1,9 +1,8 @@
 from fastapi import APIRouter, Query
 from app.services.users_service import (get_all_users_service, 
                                         get_user_service, 
-                                        create_user_service,
                                         search_candidates_service)
-from app.schemas.user_schema import UserResponse, UserBase
+from app.schemas.user_schema import UserResponse
 from app.schemas.resume_schema import ResumeResponse
 from typing import List, Optional
 
@@ -22,7 +21,4 @@ async def search_candidates(skill: Optional[str] = Query(None)):
 async def get_user(user_id: int):
     return await get_user_service(user_id)
 
-@router.post('/', response_model=UserResponse)
-async def create_user(user: UserBase):
-    return await create_user_service(user)
 
