@@ -1,7 +1,9 @@
 from fastapi import HTTPException, status, Depends
-from app.schemas.user_schema import UserResponse,UserRequest, UserLogin
+from fastapi.security import OAuth2PasswordRequestForm
+from app.schemas.user_schema import UserResponse,UserRequest
 from app.db.fake_db import users_db
-from app.auth.hash import hash_password
+from app.auth.hash import hash_password, verify_password
+from app.auth.jwt import create_access_token, create_refresh_token
 
 async def register_service(user_data: UserRequest) -> UserResponse:
     for user in users_db:
@@ -19,4 +21,20 @@ async def register_service(user_data: UserRequest) -> UserResponse:
     return new_user
 
 
+async def login_service(form_data: OAuth2PasswordRequestForm = Depends()) -> dict:
+    for user in users_db:
+        if user.email == form_data.username:  # ⚠️ username == email
+            if verify_password(form_data.password, user.hashed_password):
+                access_token = create_access_token(data={"sub": str(user.id)})
+                refresh_token = create_refresh_token(data={"sub": str(user.id)})
 
+                return {
+                    "access_token": access_token,
+                    "refresh_token": refresh_token,
+                    "token_type": "bearer"
+                }
+
+    raise HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Invalid email or password"
+    )

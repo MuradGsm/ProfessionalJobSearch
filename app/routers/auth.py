@@ -1,6 +1,7 @@
-from fastapi import APIRouter
-from app.services.auth_service import register_service
-from app.schemas.user_schema import UserResponse, UserRequest, UserLogin
+from fastapi import APIRouter, Depends
+from fastapi.security import OAuth2PasswordRequestForm
+from app.services.auth_service import register_service, login_service
+from app.schemas.user_schema import UserResponse, UserRequest
 
 
 router = APIRouter(prefix='/auth', tags=['auth'])
@@ -9,3 +10,6 @@ router = APIRouter(prefix='/auth', tags=['auth'])
 async def register(user: UserRequest):
     return await register_service(user)
 
+@router.post('/login')
+async def login(form_data: OAuth2PasswordRequestForm = Depends()):
+    return await login_service(form_data)
