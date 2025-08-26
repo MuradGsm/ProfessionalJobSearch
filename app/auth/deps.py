@@ -1,7 +1,7 @@
 from fastapi import Depends, HTTPException, status, Depends
 from fastapi.security import OAuth2PasswordBearer
 from app.db.fake_db import users_db
-from app.schemas.user_schema import UserResponse
+from app.schemas.user_schema import UserResponse, UserRequest
 from app.auth.jwt import decode_access_token
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl='/auth/login')
@@ -20,3 +20,15 @@ async def get_current_user(token: str = Depends(oauth2_scheme)) -> UserResponse:
 async def admin_required(current_user: UserResponse = Depends(get_current_user)):
     if not current_user.is_admin:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail='Admin access required')
+    return current_user
+    
+
+async def candidate_required(current_user: UserRequest = Depends(get_current_user)) -> UserResponse:
+    if current_user.role != 'candidate':
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail='Candidate access required')
+    return current_user
+
+async def employer_required(current_user: UserRequest = Depends(get_current_user)) -> UserResponse:
+    if current_user.role != 'employer':
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail='Employer access required')
+    return current_user

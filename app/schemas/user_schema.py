@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 from enum import Enum
 
 
@@ -9,7 +9,7 @@ class UserRole(str, Enum):
 
 class UserRequest(BaseModel):
     name: str
-    role: UserRole
+    role: UserRole = Field(..., description="Choose role", example="candidate")
     email: EmailStr
     password: str
 
@@ -17,7 +17,7 @@ class UserRequest(BaseModel):
 class UserResponse(BaseModel):
     id: int
     name: str
-    role: UserRole
+    role: UserRole 
     email: EmailStr
     hashed_password: str
     is_admin: bool = False
