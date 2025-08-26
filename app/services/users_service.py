@@ -17,9 +17,7 @@ async def get_user_service(user_id:int) -> UserResponse:
 async def search_candidates_service(skill: Optional[str] = None) -> List[ResumeResponse]:
     if skill:
         results = []
-        print('skill', skill)
         for resume in resumes_db:
-            print("resume", resume)
             skills_list = [s.strip().lower() for s in resume.skills.split(",")]
             if skill.lower() in skills_list:
                 results.append(resume)
