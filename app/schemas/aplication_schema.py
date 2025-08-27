@@ -1,9 +1,9 @@
 from pydantic import BaseModel
 
 class ApplicationBase(BaseModel):
-    user_id: int
-    job_id: int
     status: str = "sent"  
+    job_id: int
 
 class ApplicationResponse(ApplicationBase):
     id: int
+    user_id: int

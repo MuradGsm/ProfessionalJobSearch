@@ -10,4 +10,4 @@ class JobBase(BaseModel):
 
 class JobResponse(JobBase):
     id: int
-
+    user_id: int

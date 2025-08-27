@@ -1,6 +1,7 @@
 from fastapi import HTTPException, status
 from app.db.fake_db import jobs_db
 from app.schemas.job_schema import JobResponse, JobBase
+from app.schemas.user_schema import UserResponse
 from typing import List
 
 async def get_all_jobs_service(
@@ -32,7 +33,7 @@ async def get_job_service(job_id: int) -> JobResponse:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Job not found')
     return job
 
-async def create_job_service(job: JobBase) -> JobResponse:
+async def create_job_service(job: JobBase, current_user: UserResponse) -> JobResponse:
     new_id = len(jobs_db)+1
 
     new_job = JobResponse(
@@ -41,31 +42,37 @@ async def create_job_service(job: JobBase) -> JobResponse:
         description=job.description,
         salary=job.salary,
         location=job.location,
-        skill=job.skill
+        skill=job.skill,
+        user_id=current_user.id
     )
     jobs_db.append(new_job)
     return new_job
 
-async def update_job_service(job_id: int, job: JobBase) -> JobResponse:
+async def update_job_service(job_id: int, job: JobBase, current_user: UserResponse) -> JobResponse:
     index = next((i for i, job in enumerate(jobs_db) if job.id == job_id), None)
     if index is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Job not found')
+    if jobs_db[index].user_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail='Not allowed to edit this job')
     updated_job = JobResponse(
-        id = index+1,
+        id = jobs_db[index].id,
         title=job.title,
         description=job.description,
         salary=job.salary,
         location=job.location,
-        skill=job.skill
+        skill=job.skill,
+        user_id=current_user.id
     )
     jobs_db[index] = updated_job
     return updated_job
 
-async def delete_job_service(job_id: int) -> dict:
-    job = next((i for i, job in enumerate(jobs_db) if job.id == job_id), None)
-    if job is None:
+async def delete_job_service(job_id: int, current_user: UserResponse) -> dict:
+    index = next((i for i, job in enumerate(jobs_db) if job.id == job_id), None)
+    if index is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Job not found')
-    jobs_db.pop(job)
+    if jobs_db[index].user_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail='Not allowed to delete this job')
+    jobs_db.pop(index)
     return {'message': 'Job successfuly deleted!'}
 
 
