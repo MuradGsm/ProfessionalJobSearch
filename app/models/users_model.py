@@ -7,6 +7,7 @@ class UserRole(str, PyEnum):
     candidate = "candidate"
     employer = "employer"
 
+
 class User(Base):
     id: Mapped[pk_int]
     name: Mapped[str] = mapped_column(String, nullable=False)
@@ -15,6 +16,7 @@ class User(Base):
     hashed_password: Mapped[str] = mapped_column(String, nullable=False)
     is_admin: Mapped[bool] = mapped_column(Boolean, default=False)
     jobs: Mapped[list["Job"]] = relationship("Job", back_populates="user")
+    resumes: Mapped[list["Resume"]] = relationship("Resume", back_populates="user")
 
     def __repr__(self) -> str:
         return f"<User(id={self.id}, email={self.email}, role={self.role})>"

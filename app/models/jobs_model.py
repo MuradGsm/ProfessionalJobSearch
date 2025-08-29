@@ -32,8 +32,9 @@ class Job(Base):
     expires_at: Mapped[datetime] = mapped_column(nullable=False)
     user_id: Mapped[pk_int] = mapped_column(ForeignKey("user.id"), nullable=False)
     category_id: Mapped[pk_int] = mapped_column(ForeignKey("categories.id"), nullable=False)
-    user: Mapped["User"] = relationship("User", back_populates="jobs")
+
     category: Mapped["Categories"] = relationship("Categories", back_populates="jobs")
+    user: Mapped["User"] = relationship("User", back_populates="jobs")
 
     def __repr__(self) -> str:
         return f"<Job(title={self.title}, location={self.location}, employment_type={self.employment_type})>"

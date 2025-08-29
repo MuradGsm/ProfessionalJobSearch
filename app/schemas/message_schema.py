@@ -2,7 +2,7 @@ from pydantic import BaseModel
 from datetime import datetime
 from typing import Optional
 
-class Message(BaseModel):
+class MessageOut(BaseModel):
     chat_id: str
     user_id: int
     sender_role: str
