@@ -22,6 +22,9 @@ class UserResponse(BaseModel):
     hashed_password: str
     is_admin: bool = False
 
+    class Config:
+        from_attributes = True 
+
 
 class UserLogin(BaseModel):
     email: EmailStr
