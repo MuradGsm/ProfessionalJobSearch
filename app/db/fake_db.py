@@ -1,11 +1,13 @@
 from typing import List, Dict, Set
 from fastapi import WebSocket
 from app.schemas.message_schema import Message
+from app.schemas.notification_schema import NotificationSchema
 
 users_db = []
 jobs_db = []
 resumes_db = []
 aplications_db = []
+notification_db: List[NotificationSchema] = []
 
 connections: Dict[str, List[WebSocket]] = {}
 
@@ -24,3 +26,5 @@ def get_other_user_id(chat_id: str, current_user_id: int) -> int:
     user_ids = chat_id.split('-')
     user1_id, user2_id = int(user_ids[0]), int(user_ids[1])
     return user2_id if current_user_id == user1_id else user1_id
+
+

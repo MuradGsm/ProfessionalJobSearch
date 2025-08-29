@@ -1,4 +1,5 @@
 from pydantic import BaseModel
+from app.schemas.notification_schema import NotificationSchema
 
 class ApplicationBase(BaseModel):
     status: str = "sent"  
@@ -7,3 +8,8 @@ class ApplicationBase(BaseModel):
 class ApplicationResponse(ApplicationBase):
     id: int
     user_id: int
+
+
+class ApplicationWithNotificationResponse(BaseModel):
+    application: ApplicationResponse
+    notification: NotificationSchema
