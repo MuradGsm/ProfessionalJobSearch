@@ -3,10 +3,10 @@ from sqlalchemy.orm import DeclarativeBase, mapped_column, Mapped, declared_attr
 from sqlalchemy import func
 from typing import Annotated
 from datetime import datetime
-from app.config import settings
+from app.config.setting import setting
 
 
-engine = create_async_engine()
+engine = create_async_engine(setting.DATA_URL, echo=True)
 async_session  = async_sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)
 
 async def get_session() -> AsyncSession:
