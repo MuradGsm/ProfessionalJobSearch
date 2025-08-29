@@ -1,7 +1,7 @@
 from fastapi import HTTPException
 from datetime import datetime, timedelta
 from jose import jwt, JWTError
-from app.config.setting import setting
+from app.config.setting import settings as setting
 
 def create_access_token(data: dict) -> str:
     to_encode = data.copy()
