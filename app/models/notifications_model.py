@@ -19,8 +19,8 @@ class Notification(Base):
     content: Mapped[str] = mapped_column(String(500), nullable=False)
     is_read: Mapped[bool] = mapped_column(Boolean, default=False)
     
-    # Optional fields for linking to specific entities
-    related_id: Mapped[int] = mapped_column(nullable=True)  # Can link to job_id, message_id, etc.
+
+    related_id: Mapped[int] = mapped_column(nullable=True)  
     
     # Relationships
     user: Mapped["User"] = relationship("User", back_populates="notifications")

@@ -5,6 +5,7 @@ class UserRole(str, Enum):
     candidate = 'candidate'
     employer = 'employer'
 
+
 class UserRequest(BaseModel):
     name: str = Field(..., min_length=2, max_length=100)
     role: UserRole = Field(..., description="Choose role", example="candidate")
@@ -21,6 +22,7 @@ class UserRequest(BaseModel):
             raise ValueError('Password must contain at least one digit')
         return v
 
+
 class UserResponse(BaseModel):
     id: int
     name: str
@@ -32,6 +34,13 @@ class UserResponse(BaseModel):
     class Config:
         from_attributes = True 
 
+
 class UserLogin(BaseModel):
     email: EmailStr
     password: str = Field(..., min_length=1)
+
+
+class TokenResponse(BaseModel):
+    access_token: str
+    refresh_token: str
+    token_type: str = "bearer"
