@@ -1,78 +1,91 @@
 from fastapi import HTTPException, status
-from app.db.fake_db import jobs_db
-from app.schemas.job_schema import JobResponse, JobBase
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
+from app.models.jobs_model import Job
+from app.schemas.job_schema import JobBase
 from app.schemas.user_schema import UserResponse
 from typing import List
 
 async def get_all_jobs_service(
+        session: AsyncSession,
         min_salary: int | None = None,
         max_salary: int | None = None,
         location: str | None = None,
-        skill: str | None = None
-) -> List[JobResponse]:
-    results = jobs_db
-
+        skill: str | None = None,
+) -> List[Job]:
+    query = select(Job)
     if min_salary is not None:
-        results = [job for job in results if job.salary >= min_salary]
+        query = query.where(Job.salary >= min_salary)
 
     if max_salary is not None:
-        results = [job for job in results if job.salary <= max_salary]
+        query = query.where(Job.salary <= max_salary)
 
     if location is not None:
-        results = [job for job in results if job.location.lower() == location.lower()]
+        query = query.where(Job.location.ilike(f"%{location}%"))
 
     if skill is not None:
-        results = [job for job in results if skill.lower() in job.skill.lower()]
+        query = query.where(Job.skills_required.any(skill))
 
-    return results
+    results = await session.execute(query)
+    job = results.scalars().all()
+
+    return job
 
 
-async def get_job_service(job_id: int) -> JobResponse:
-    job = next((job for job in jobs_db if job.id == job_id), None)
+async def get_job_service(job_id: int, session: AsyncSession) -> Job:
+    results = await session.execute(select(Job).where(Job.id == job_id))
+    job = results.scalar_one_or_none()
     if job is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Job not found')
     return job
 
-async def create_job_service(job: JobBase, current_user: UserResponse) -> JobResponse:
-    new_id = len(jobs_db)+1
-
-    new_job = JobResponse(
-        id=new_id,
+async def create_job_service(job: JobBase, current_user: UserResponse, session: AsyncSession) -> Job:
+    new_job = Job(
         title=job.title,
         description=job.description,
         salary=job.salary,
         location=job.location,
-        skill=job.skill,
+        employment_type=job.employment_type,
+        skills_required=job.skills_required,
+        expires_at=job.expires_at,
+        category_id=job.category_id,
         user_id=current_user.id
     )
-    jobs_db.append(new_job)
+    session.add(new_job)
+    await session.commit()
+    await session.refresh(new_job)
     return new_job
 
-async def update_job_service(job_id: int, job: JobBase, current_user: UserResponse) -> JobResponse:
-    index = next((i for i, job in enumerate(jobs_db) if job.id == job_id), None)
-    if index is None:
+async def update_job_service(job_id: int, job: JobBase, current_user: UserResponse, session: AsyncSession) -> Job:
+    results = await session.execute(select(Job).where(Job.id == job_id))
+    existing_job = results.scalar_one_or_none()
+    if existing_job is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Job not found')
-    if jobs_db[index].user_id != current_user.id:
+    if existing_job.user_id != current_user.id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail='Not allowed to edit this job')
-    updated_job = JobResponse(
-        id = jobs_db[index].id,
-        title=job.title,
-        description=job.description,
-        salary=job.salary,
-        location=job.location,
-        skill=job.skill,
-        user_id=current_user.id
-    )
-    jobs_db[index] = updated_job
-    return updated_job
+    existing_job.title = job.title
+    existing_job.description = job.description
+    existing_job.salary = job.salary
+    existing_job.location = job.location
+    existing_job.employment_type = job.employment_type
+    existing_job.skills_required = job.skills_required
+    existing_job.expires_at = job.expires_at
+    existing_job.category_id = job.category_id
+    existing_job.user_id = current_user.id
+    session.add(existing_job)
+    await session.commit()
+    await session.refresh(existing_job)
+    return existing_job
 
-async def delete_job_service(job_id: int, current_user: UserResponse) -> dict:
-    index = next((i for i, job in enumerate(jobs_db) if job.id == job_id), None)
-    if index is None:
+async def delete_job_service(job_id: int, current_user: UserResponse, session: AsyncSession) -> dict:
+    results = await session.execute(select(Job).where(Job.id == job_id))
+    job = results.scalar_one_or_none()
+    if job is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Job not found')
-    if jobs_db[index].user_id != current_user.id:
+    if job.user_id != current_user.id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail='Not allowed to delete this job')
-    jobs_db.pop(index)
+    session.delete(job)
+    await session.commit()
     return {'message': 'Job successfuly deleted!'}
 
 
