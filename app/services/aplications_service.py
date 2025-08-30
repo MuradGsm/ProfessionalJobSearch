@@ -1,68 +1,136 @@
 from fastapi import HTTPException, status
-from app.db.fake_db import aplications_db, jobs_db, notification_db
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
+from datetime import datetime
+from typing import List
+
+from app.models.aplications_model import Application, ApplicationStatus
+from app.models.jobs_model import Job
+from app.models.notifications_model import Notification
 from app.schemas.aplication_schema import ApplicationResponse, ApplicationWithNotificationResponse
 from app.schemas.user_schema import UserResponse
-from app.schemas.notification_schema import NotificationSchema
-from typing import List
-from datetime import datetime
 
 
-async def get_all_aplications_service(current_user: UserResponse) -> List[ApplicationResponse]:
-    return [app for app in aplications_db if app.user_id == current_user.id]
+async def get_all_applications_service(current_user: UserResponse, session: AsyncSession) -> List[Application]:
+    query = select(Application).where(Application.user_id == current_user.id)
+    result = await session.execute(query)
+    applications = result.scalars().all()
+    return applications
 
 
-async def add_aplication_service(
-    job_id: int, 
-    current_user: UserResponse, 
-    status: str = 'sent'
+async def add_application_service(
+    session: AsyncSession,
+    job_id: int,
+    current_user: UserResponse,
+    status: str = "sent"
 ) -> ApplicationWithNotificationResponse:
-    job = next((j for j in jobs_db if j.id == job_id), None)
-    if job is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Job not found')
 
-    new_id = len(aplications_db) + 1
-    application = ApplicationResponse(
-        id=new_id,
+    existing_query = select(Application).where(
+        Application.user_id == current_user.id,
+        Application.job_id == job_id
+    )
+    existing_result = await session.execute(existing_query)
+    existing_application = existing_result.scalar_one_or_none()
+    if existing_application:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="You have already applied to this job"
+        )
+
+    job_query = select(Job).where(Job.id == job_id)
+    job_result = await session.execute(job_query)
+    job = job_result.scalar_one_or_none()
+    if not job:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Job not found"
+        )
+
+    status_enum = ApplicationStatus(status)
+    new_application = Application(
         user_id=current_user.id,
         job_id=job.id,
-        status=status
+        status=status_enum
     )
-    aplications_db.append(application)
+    session.add(new_application)
+    await session.commit()
+    await session.refresh(new_application)
 
-    notification_id = len(notification_db) + 1 if notification_db else 1
-    notification = NotificationSchema(
-        id=notification_id,
+    new_notification = Notification(
         user_id=current_user.id,
         type="application",
-        content=f"Вы откликнулись на вакансию: {job.title}",
+        content=f"You applied for the job: {job.title}",
         is_read=False,
-        created_at=datetime.utcnow().isoformat()
+        created_at=datetime.utcnow()
     )
-    notification_db.append(notification)
+    session.add(new_notification)
+    await session.commit()
+    await session.refresh(new_notification)
 
     return ApplicationWithNotificationResponse(
-        application=application,
-        notification=notification
+        application=new_application,
+        notification=new_notification
+    )
+
+async def update_application_service(
+    application_id: int,
+    status: str,
+    current_user: UserResponse,
+    session: AsyncSession
+) -> ApplicationResponse:
+
+    query = select(Application).where(Application.id == application_id)
+    result = await session.execute(query)
+    application = result.scalar_one_or_none()
+
+    if not application:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Application not found"
+        )
+
+    if application.user_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not allowed to update this application"
+        )
+
+    application.status = ApplicationStatus(status)
+    session.add(application)
+    await session.commit()
+    await session.refresh(application)
+
+    return ApplicationResponse(
+        id=application.id,
+        job_id=application.job_id,
+        user_id=application.user_id,
+        status=application.status.value
     )
 
 
-async def update_aplication_service(application_id: int, status: str, current_user: UserResponse) -> ApplicationResponse:
-    index = next((i for i, a in enumerate(aplications_db) if a.id == application_id), None)
-    if index is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Application not found')
+async def delete_application_service(
+    application_id: int,
+    current_user: UserResponse,
+    session: AsyncSession
+) -> dict:
 
-    if aplications_db[index].user_id != current_user.id:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail='Not allowed to update this application')
+    query = select(Application).where(Application.id == application_id)
+    result = await session.execute(query)
+    application = result.scalar_one_or_none()
 
-    old_app = aplications_db[index]
-    updated_app = ApplicationResponse(
-        id=old_app.id,
-        job_id=old_app.job_id,
-        user_id=old_app.user_id,
-        status=status
-    )
-    aplications_db[index] = updated_app
-    return updated_app
+    if not application:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Application not found"
+        )
 
+    if application.user_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not allowed to delete this application"
+        )
 
+    await session.delete(application)
+    await session.commit()
 
+    return {"message": "Application deleted successfully"}
