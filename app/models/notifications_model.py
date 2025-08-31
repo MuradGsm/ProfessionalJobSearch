@@ -4,7 +4,7 @@ from sqlalchemy import String, Boolean, ForeignKey, Enum as SQLEnum, Index
 from enum import Enum
 
 class NotificationType(str, Enum):
-    message = "message"
+    message = "message" 
     application = "application"
     job_update = "job_update"
     system = "system"
