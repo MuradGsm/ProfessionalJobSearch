@@ -4,14 +4,14 @@ from sqlalchemy import select
 from app.models.jobs_model import Job
 from app.schemas.job_schema import JobBase
 from app.schemas.user_schema import UserResponse
-from typing import List
+from typing import List, Optional
 
 async def get_all_jobs_service(
         session: AsyncSession,
-        min_salary: int | None = None,
-        max_salary: int | None = None,
-        location: str | None = None,
-        skill: str | None = None,
+        min_salary: Optional[int] = None,
+        max_salary: Optional[int] = None,
+        location: Optional[str] = None,
+        skill: Optional[str] = None,
 ) -> List[Job]:
     query = select(Job)
     if min_salary is not None:

@@ -3,8 +3,9 @@ from datetime import datetime
 from app.db.fake_db import (
     messages_db, users_db, create_chat_id, get_other_user_id
 )
-from app.schemas.message_schema import Message, MessageResponse, ChatListResponse
+from app.schemas.message_schema import  MessageResponse, ChatListResponse
 from app.schemas.user_schema import UserResponse
+from app.models.messages_model import Message
 
 class MessageService:
     

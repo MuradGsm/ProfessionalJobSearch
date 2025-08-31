@@ -1,7 +1,7 @@
 from typing import List, Dict, Set
 from fastapi import WebSocket
-from app.schemas.message_schema import Message
 from app.schemas.notification_schema import NotificationSchema
+from app.models.messages_model import Message
 
 users_db = []
 jobs_db = []

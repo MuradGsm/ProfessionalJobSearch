@@ -1,7 +1,6 @@
 from app.db.database import Base, pk_int
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy import String, Boolean, ForeignKey, Index
-import uuid
 
 class Message(Base):
     id: Mapped[pk_int]
