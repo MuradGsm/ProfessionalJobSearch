@@ -26,5 +26,3 @@ class ChatListResponse(BaseModel):
     last_message: Optional[str] = None
     last_message_time: Optional[datetime] = None
     unread_count: int = 0
-
-# Убрал MessageOut - дублирует MessageResponse
