@@ -1,111 +1,35 @@
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends
+from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List
-import json
-from app.schemas.message_schema import ChatListResponse
-from app.services.messages_service import MessageService
-from app.utils.connection_manager import manager
-from app.auth.jwt import decode_access_token
-from app.auth.deps import get_current_user
+
+from app.models.messages_model import Message
+from app.schemas.message_schema import MessageCreate, MessageResponse, ChatListResponse
 from app.schemas.user_schema import UserResponse
+from app.db.database import get_session
+from app.auth.deps import get_current_user
+from app.services.messages_service import (
+    get_chat_list_service,
+    get_chat_messages_service,
+    mark_messages_read_service,
+    send_message_service
+)
 
-router = APIRouter(prefix="/chat", tags=["Chat"])
+router = APIRouter(prefix="/messages", tags=["Chat"])
 
 
 
-@router.get("/health")
-async def hello():
-    return {"message": "Chat service is healthy"}
+@router.get('/{chat_id}', response_model=List[MessageResponse])
+async def get_chat_messages(chat_id: str, session: AsyncSession = Depends(get_session), current_user: UserResponse = Depends(get_current_user)):
+    return await get_chat_messages_service(chat_id, session, current_user)
 
+@router.get('/chats', response_model=List[ChatListResponse])
+async def get_chat_list(current_user: UserResponse = Depends(get_current_user), session: AsyncSession = Depends(get_session)):
+    return await get_chat_list_service(current_user, session)
 
-# @router.websocket("/ws/{other_user_id}")
-# async def websocket_endpoint(
-#     websocket: WebSocket,
-#     other_user_id: int,
-#     token: str = Query(...)
-# ):
-#     """WebSocket соединение для чата между двумя пользователями"""
-#     try:
-#         current_user_id = decode_access_token(token)
-        
-#         current_user = None
-#         from app.db.fake_db import users_db
-#         for user in users_db:
-#             if user.id == current_user_id:
-#                 current_user = user
-#                 break
-        
-#         if not current_user:
-#             await websocket.close(code=4001, reason="User not found")
-#             return
+@router.post('/', response_model=MessageResponse)
+async def send_message(message: MessageCreate, current_user: UserResponse  = Depends(get_current_user), session: AsyncSession = Depends(get_session)):
+    return await send_message_service(message, current_user, session)
 
-#         if not MessageService.validate_chat_participants(current_user_id, other_user_id):
-#             await websocket.close(code=4002, reason="Invalid chat participants")
-#             return
-
-#         chat_id = await manager.connect(websocket, current_user_id, other_user_id)
-        
-#         try:
-#             while True:
-#                 data = await websocket.receive_text()
-                
-#                 try:
-#                     message_data = json.loads(data)
-#                     await manager.handle_message(
-#                         websocket=websocket,
-#                         data=message_data,
-#                         current_user_id=current_user_id,
-#                         current_user_role=current_user.role
-#                     )
-#                 except json.JSONDecodeError:
-#                     await manager.send_error(websocket, "Неверный формат JSON")
-#                 except Exception as e:
-#                     await manager.send_error(websocket, f"Ошибка обработки сообщения: {str(e)}")
-                    
-#         except WebSocketDisconnect:
-#             manager.disconnect(websocket)
-            
-#     except Exception as e:
-#         await websocket.close(code=4000, reason=f"Authentication failed: {str(e)}")
-
-# @router.get("/chats", response_model=List[ChatListResponse])
-# async def get_user_chats(current_user: UserResponse = Depends(get_current_user)):
-#     """Получить список всех чатов текущего пользователя"""
-#     return MessageService.get_user_chats(current_user.id)
-
-# @router.get("/chats/{other_user_id}/messages")
-# async def get_chat_messages(
-#     other_user_id: int,
-#     current_user: UserResponse = Depends(get_current_user)
-# ):
-#     """Получить историю сообщений конкретного чата"""
-
-#     if not MessageService.validate_chat_participants(current_user.id, other_user_id):
-#         raise HTTPException(status_code=404, detail="User not found")
-    
-#     from app.db.fake_db import create_chat_id
-#     chat_id = create_chat_id(current_user.id, other_user_id)
-#     messages = MessageService.get_chat_messages(chat_id)
-    
-#     return {
-#         "chat_id": chat_id,
-#         "messages": messages
-#     }
-
-# @router.get("/active-users")
-# async def get_active_users(current_user: UserResponse = Depends(get_current_user)):
-#     """Получить список активных пользователей"""
-#     from app.db.fake_db import active_users, users_db
-    
-#     active_user_list = []
-#     for user_id in active_users.keys():
-#         for user in users_db:
-#             if user.id == user_id and user.id != current_user.id:
-#                 active_user_list.append({
-#                     "id": user.id,
-#                     "name": user.name,
-#                     "role": user.role,
-#                     "is_active": True
-#                 })
-#                 break
-    
-#     return active_user_list
+@router.put('/{chat_id}')
+async def mark_messages_read(chat_id: str, session: AsyncSession = Depends(get_session), current_user: UserResponse = Depends(get_current_user)):
+    return await mark_messages_read_service(chat_id, session, current_user)
