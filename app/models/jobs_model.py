@@ -1,7 +1,7 @@
 from app.db.database import Base, pk_int
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy import String, Boolean, ForeignKey, Float, ARRAY, Index, Enum as SQLEnum, CheckConstraint, text
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Optional
 from app.schemas.job_schema import EducationLevel, SkillLevel, EmploymentType
 
@@ -62,7 +62,6 @@ class Job(Base):
     tags: Mapped[list[str]] = mapped_column(ARRAY(String), nullable=True, default=[])
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     expires_at: Mapped[datetime] = mapped_column(nullable=False)
-    user_id: Mapped[int] = mapped_column(ForeignKey("user.id"), nullable=False)
     category_id: Mapped[int] = mapped_column(ForeignKey("categories.id"), nullable=False)
     company_id: Mapped[int] = mapped_column(ForeignKey('company.id'), nullable=False)
 
@@ -70,6 +69,7 @@ class Job(Base):
     category: Mapped["Categories"] = relationship("Categories", back_populates="jobs")
     user: Mapped["User"] = relationship("User", back_populates="jobs")
     applications: Mapped[list["Application"]] = relationship("Application", back_populates="job", cascade="all, delete-orphan")
+    company: Mapped["Company"] = relationship("Company", back_populates="jobs")
 
     __table_args__ = (
         # Basic indexes
