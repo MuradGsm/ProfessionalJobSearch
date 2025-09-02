@@ -1,8 +1,8 @@
 from app.db.database import Base, pk_int
 from sqlalchemy.orm import mapped_column, Mapped
-from sqlalchemy import String, Boolean, ForeignKey, ARRAY, DateTime
+from sqlalchemy import String, Boolean, ForeignKey, ARRAY, DateTime, func, Enum as SQLEnum
 from datetime import datetime
-
+from app.schemas.company_schema import CompanyRole
 
 class Company(Base):
     id: Mapped[pk_int]
@@ -17,16 +17,16 @@ class Company(Base):
 class Invitations(Base):
     id: Mapped[pk_int]
     email: Mapped[str] = mapped_column(String(100), nullable=False, unique=False)
-    company_role: Mapped[str] = mapped_column(String(20), nullable=False)
+    company_role: Mapped[CompanyRole] = mapped_column(SQLEnum(CompanyRole), nullable=False)
     token: Mapped[str] = mapped_column(String(100), nullable=False)
     expires_at: Mapped[datetime] = mapped_column(nullable=False)
     is_used: Mapped[bool] = mapped_column(Boolean, default=False)
     company_id: Mapped[int] = mapped_column(ForeignKey('company.id'), nullable=False)
     invited_by: Mapped[int] = mapped_column(ForeignKey('user.id'))
 
-
+ 
 class CompanyMember(Base):
-    company_role: Mapped[str] = mapped_column(String(20), nullable=False)
+    company_role: Mapped[CompanyRole] = mapped_column(SQLEnum(CompanyRole), nullable=False)
     permission: Mapped[list[str]] = mapped_column(ARRAY(String), nullable=False)
     joined_at: Mapped[datetime] = mapped_column(DateTime, default=func.now())
     is_active: Mapped[bool] = mapped_column(Boolean, default=False)
