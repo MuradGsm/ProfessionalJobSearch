@@ -64,6 +64,7 @@ class Job(Base):
     expires_at: Mapped[datetime] = mapped_column(nullable=False)
     user_id: Mapped[int] = mapped_column(ForeignKey("user.id"), nullable=False)
     category_id: Mapped[int] = mapped_column(ForeignKey("categories.id"), nullable=False)
+    company_id: Mapped[int] = mapped_column(ForeignKey('company.id'), nullable=False)
 
     # Relationships
     category: Mapped["Categories"] = relationship("Categories", back_populates="jobs")

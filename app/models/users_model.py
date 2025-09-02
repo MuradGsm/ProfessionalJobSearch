@@ -1,7 +1,8 @@
 from app.db.database import Base, pk_int
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy import Boolean, String, Enum as SQLEnum, Index
+from sqlalchemy import Boolean, String, Enum as SQLEnum, Index, ForeignKey
 from enum import Enum as PyEnum
+from typing import Optional
 
 class UserRole(str, PyEnum):
     candidate = "candidate"
@@ -15,7 +16,8 @@ class User(Base):
     hashed_password: Mapped[str] = mapped_column(String(255), nullable=False)
     is_admin: Mapped[bool] = mapped_column(Boolean, default=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
-    
+    company_id: Mapped[Optional[int]] = mapped_column(ForeignKey('company.id'), nullable=True)
+
     # Relationships
     jobs: Mapped[list["Job"]] = relationship("Job", back_populates="user", cascade="all, delete-orphan")
     resumes: Mapped[list["Resume"]] = relationship("Resume", back_populates="user", cascade="all, delete-orphan")
