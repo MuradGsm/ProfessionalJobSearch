@@ -39,7 +39,7 @@ class Application(Base):
         Index('idx_application_user_status', 'user_id', 'status'),
         Index('idx_application_status_created', 'status', 'created_at'),
 
-        CheckConstraint("status != 'sent' OR  reated_at = updated_at", name='check_initial_status')
+        CheckConstraint("status != 'sent' OR created_at = updated_at", name='check_initial_status')
     )
 
     def can_be_updated(self) -> bool:

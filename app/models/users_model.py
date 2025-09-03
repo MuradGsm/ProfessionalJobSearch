@@ -27,6 +27,7 @@ class User(Base):
     last_login: Mapped[Optional[datetime]] = mapped_column(nullable=True)
     login_attempts: Mapped[int] = mapped_column(default=0)
     locked_until: Mapped[Optional[datetime]] = mapped_column(nullable=True)
+    deleted_at: Mapped[Optional[datetime]] = mapped_column(nullable=True)
 
     # Relationships
     resumes: Mapped[list["Resume"]] = relationship("Resume", back_populates="user", cascade="all, delete-orphan")
@@ -41,7 +42,7 @@ class User(Base):
         Index('idx_user_email', 'email'),
         Index('idx_user_role', 'role'),
         Index('idx_user_active', 'is_active'),
-        Index('idx_user_email_verifed', 'email', 'email_verifed'),
+        Index('idx_user_email_verifed', 'email', 'email_verified'),
         Index('idx_user_deleted', 'deleted_at'),
         Index('idx_user_locked', 'locked_until')
     )
@@ -53,7 +54,7 @@ class User(Base):
         return verify_password(password, self.hashed_password)
     
     def is_locked(self) -> bool:
-        return self.locked_until and self.locked_until > datetime.now()
+        return bool(self.locked_until and self.locked_until > datetime.utcnow())
     
     def lock_account(self, minutes: int = 30):
         self.locked_until = datetime.utcnow() + timedelta(minutes=minutes)
