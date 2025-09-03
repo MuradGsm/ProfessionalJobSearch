@@ -1,7 +1,9 @@
 from app.db.database import Base, pk_int
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy import String, Boolean, ForeignKey, Index
- 
+from sqlalchemy import String, Boolean, ForeignKey, Index, CheckConstraint
+from typing import Optional
+from datetime import datetime
+
 class Message(Base):
     id: Mapped[pk_int]
     chat_id: Mapped[str] = mapped_column(String(100), nullable=False)
@@ -9,6 +11,18 @@ class Message(Base):
     recipient_id: Mapped[int] = mapped_column(ForeignKey("user.id"), nullable=False)
     text: Mapped[str] = mapped_column(String(1000), nullable=False)
     is_read: Mapped[bool] = mapped_column(Boolean, default=False)
+
+    reply_to_id: Mapped[Optional[int]] = mapped_column(ForeignKey('message.id'), nullable=True)
+    message_type: Mapped[Optional[str]] = mapped_column(String(20), default='text')
+    file_url: Mapped[Optional[str]] =mapped_column(String(500), nullable=True)
+
+    is_flagged: Mapped[bool] = mapped_column(Boolean, default=False)
+    flagged_reason: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
+
+    deleted_at: Mapped[Optional[datetime]] = mapped_column(nullable=True)
+    deleted_by: Mapped[Optional[int]] = mapped_column(ForeignKey('user.id'), nullable=True)
+
+    sender_ip: Mapped[Optional[str]] = mapped_column(String(45), nullable=True)
 
     # Relationships
     sender: Mapped["User"] = relationship("User", foreign_keys=[sender_id], back_populates="sent_messages")
@@ -20,6 +34,12 @@ class Message(Base):
         Index('idx_message_recipient', 'recipient_id'),
         Index('idx_message_unread', 'recipient_id', 'is_read'),
         Index('idx_message_created', 'created_at'),
+        Index('idx_message_reply', 'reply_to_id'),
+        Index('idx_message_type', 'message_type'),
+        Index('idx_message_flagged', 'is_flagged'),
+        Index('idx_message_deleted', 'deleted_at'),
+        Index('idx_message_sender_ip', 'sender_id'),
+        CheckConstraint('length(text) <= 1000', name='chech_message_length')
     )
 
     @staticmethod

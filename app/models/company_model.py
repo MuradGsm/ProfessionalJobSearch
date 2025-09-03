@@ -28,32 +28,8 @@ class Company(Base):
         Index('idx_company_active_industry', 'is_active', 'industry')
     )
 
-    @property
-    def total_members_count(self, session) -> int:
-        """Count of all active members including owner using SQL"""
-        result = session.execute(select(func.count(CompanyMember.id)
-        ).where(CompanyMember.company_id == self.id, CompanyMember.is_active == True)).scalar()
-        return (result or 0) + 1
-    
-    @property
-    def active_jobs_count(self, session) -> int:
-        """Count of active non-expired jobs using SQL"""
-        from app.models.jobs_model import Job
-        result = session.execute(
-            select(func.count(Job.id))
-            .where(Job.company_id == self.id, Job.is_active == True, Job.expires_at > func.now())
-        ).scalar()
-        return result or 0
-    
-    @property
-    def pending_invitations_count(self, session) -> int:
-        """Count of pending invitations using SQL"""
-        result = session.execute(
-            select(func.count(Invitations.id))
-            .where(Invitations.company_id == self.id, Invitations.is_used == False, Invitations.expires_at > func.now())
-        ).scalar()
-        return result or 0
-    
+        
+   
     def get_member_by_user_id(self, user_id: int) -> Optional['CompanyMember']:
         """Get company member by user ID"""
         return next((member for member in self.members if member.user_id == user_id and member.is_active), None)
@@ -115,9 +91,14 @@ class Invitations(Base):
     is_used: Mapped[bool] = mapped_column(Boolean, default=False)
     company_id: Mapped[int] = mapped_column(ForeignKey('company.id'), nullable=False)
     invited_by: Mapped[int] = mapped_column(ForeignKey('user.id'), nullable=False)
+    sender_ip: Mapped[Optional[str]] = mapped_column(String(45), nullable=True)
+
+    opened_at: Mapped[Optional[datetime]] = mapped_column(nullable=True)
+    clicked_at: Mapped[Optional[datetime]] = mapped_column(nullable=True)
 
     company: Mapped['Company'] = relationship('Company', back_populates='invitations')
     inviter: Mapped['User'] = relationship('User', foreign_keys=[invited_by])
+
 
     __table_args__ = (
         UniqueConstraint('email', 'company_id', 'is_used', name='uq_email_company_unused'),
@@ -127,7 +108,8 @@ class Invitations(Base):
         Index('idx_invitation_company', 'company_id'),
         Index('idx_invitation_expires', 'expires_at'),
         Index('idx_invitation_unused', 'is_used', 'expires_at'),
-
+        Index('idx_invitation_sender_ip', 'sender_ip'),
+        Index('idx_invitation_stats', 'opened_at', 'clicked_at'),
 
         CheckConstraint('expires_at > created_at', name='check_future_expiry_invitation'),
     )
