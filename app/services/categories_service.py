@@ -1,7 +1,7 @@
 from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
-from app.models.jobs_model import Categories
+from sqlalchemy import select, and_, func
+from app.models.jobs_model import Categories, Job
 from app.schemas.job_schema import CategoryCreate
 from typing import List, Optional
 
@@ -68,3 +68,17 @@ async def delete_category_service(cat_id: int, session: AsyncSession) -> dict:
     session.delete(category)
     await session.commit()
     return {'message': 'Category successfuly deleted!'}
+
+
+async def active_jobs_count(cat_id: int, session: AsyncSession) -> int:
+        """Count of active jobs in this category using SQL aggregation"""
+
+        result = session.execute(
+            select(func.count(Job.id))
+            .where(and_(
+                Job.category_id == cat_id,
+                Job.is_active ==True,
+                Job.expires_at > func.now()
+            ))
+        ).scalar()
+        return result or 0

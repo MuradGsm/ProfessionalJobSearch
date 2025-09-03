@@ -1,10 +1,11 @@
 from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, func, and_
 from app.models.jobs_model import Job
 from app.schemas.job_schema import JobBase
 from app.schemas.user_schema import UserResponse
 from typing import List, Optional
+from datetime import datetime, timedelta
 
 async def get_all_jobs_service(
         session: AsyncSession,
@@ -91,4 +92,24 @@ async def delete_job_service(job_id: int, current_user: UserResponse, session: A
 
 
 
-    
+async def get_expiring_soon(session: AsyncSession, days: int = 7, current_time: datetime = None):
+    current_time = current_time or datetime.utcnow()
+    cutoff_date = current_time + timedelta(days=days)
+    result = await session.execute(
+        select(Job).where(
+            and_(
+                Job.is_active == True,
+                Job.expires_at <= cutoff_date,
+                Job.expires_at > current_time
+            )
+        )
+    )
+    return result.scalars().all()
+
+async def get_active_jobs_count_by_category(session: AsyncSession, category_id: int) -> int:
+    result = await session.execute(
+        select(func.count(Job.id)).where(
+            and_(Job.category_id == category_id, Job.is_active == True, Job.expires_at > func.now())
+        )
+    )
+    return result.scalar_one()

@@ -1,7 +1,7 @@
 from app.db.database import Base, pk_int
 from app.schemas.company_schema import CompanyRole
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy import String, Boolean, ForeignKey, Index, Enum as SQLEnum, DateTime, UniqueConstraint, CheckConstraint, ARRAY, func
+from sqlalchemy import String, Boolean, ForeignKey, Index, Enum as SQLEnum, DateTime, UniqueConstraint, CheckConstraint, ARRAY, func, select
 from typing import Optional, List
 from datetime import datetime
 
@@ -17,7 +17,7 @@ class Company(Base):
 
     owner: Mapped['User'] = relationship('User', foreign_keys=[owner_id], back_populates='owner_company')
     members: Mapped[List['CompanyMember']] = relationship('CompanyMember', back_populates='company', cascade='all, delete-orphan')
-    jobs: Mapped[List['Job']] = relationship('Job', back_populates='company', cascade='all, delete-orphan')
+    jobs: Mapped[List['Job']] = relationship('Job', back_populates='company', cascade='all, delete-orphan', lazy='select')
     invitations: Mapped[List['Invitations']] = relationship('Invitations', back_populates='company', cascade='all, delete-orphan')
 
     __table_args__ = (
@@ -25,33 +25,82 @@ class Company(Base):
         Index('idx_company_owner', 'owner_id'),
         Index('idx_company_active', 'is_active'),
         Index('idx_company_industry', 'industry'),
+        Index('idx_company_active_industry', 'is_active', 'industry')
     )
 
     @property
-    def total_members_count(self) -> int:
-        """Count of all active members including owner"""
-        return len([member for member in self.members if member.is_active])+1
+    def total_members_count(self, session) -> int:
+        """Count of all active members including owner using SQL"""
+        result = session.execute(select(func.count(CompanyMember.id)
+        ).where(CompanyMember.company_id == self.id, CompanyMember.is_active == True)).scalar()
+        return (result or 0) + 1
     
     @property
-    def active_jobs_count(self) -> int:
-        """Count of active non-expired jobs"""
-        return len([job for job in self.jobs if job.is_active and not job.is_expired])
+    def active_jobs_count(self, session) -> int:
+        """Count of active non-expired jobs using SQL"""
+        from app.models.jobs_model import Job
+        result = session.execute(
+            select(func.count(Job.id))
+            .where(Job.company_id == self.id, Job.is_active == True, Job.expires_at > func.now())
+        ).scalar()
+        return result or 0
     
     @property
-    def pending_invitations_count(self) -> int:
-        """Count of pending invitations"""
-        return len([inv for inv in self.invitations if not inv.is_used and not inv.is_expired])
+    def pending_invitations_count(self, session) -> int:
+        """Count of pending invitations using SQL"""
+        result = session.execute(
+            select(func.count(Invitations.id))
+            .where(Invitations.company_id == self.id, Invitations.is_used == False, Invitations.expires_at > func.now())
+        ).scalar()
+        return result or 0
     
     def get_member_by_user_id(self, user_id: int) -> Optional['CompanyMember']:
         """Get company member by user ID"""
         return next((member for member in self.members if member.user_id == user_id and member.is_active), None)
     
-    def can_user_manage_jobs(self, user_id: int) -> bool:
+    def can_user_create_jobs(self, user_id: int) -> bool:
+        """Check if user can create jobs"""
         if self.owner_id == user_id:
             return True
         
         member = self.get_member_by_user_id(user_id)
-        return member and member.has_permission('MANAGE_JOBS')
+        return member and (
+            member.has_permission('CREATE_JOBS') or 
+            member.has_permission('MANAGE_JOBS')
+        )
+    
+    def can_user_edit_jobs(self, user_id: int) -> bool:
+        """Check if user can edit jobs"""
+        if self.owner_id == user_id:
+            return True
+        
+        member = self.get_member_by_user_id(user_id)
+        return member and (
+            member.has_permission('EDIT_JOBS') or 
+            member.has_permission('MANAGE_JOBS')
+        )
+    
+    def can_user_delete_jobs(self, user_id: int) -> bool:
+        """Check if user can delete jobs"""
+        if self.owner_id == user_id:
+            return True
+        
+        member = self.get_member_by_user_id(user_id)
+        return member and (
+            member.has_permission('DELETE_JOBS') or 
+            member.has_permission('MANAGE_JOBS')
+        )
+    
+    def can_user_view_applications(self, user_id: int) -> bool:
+        """Check if user can view applications"""
+        if self.owner_id == user_id:
+            return True
+        
+        member = self.get_member_by_user_id(user_id)
+        return member and (
+            member.has_permission('VIEW_APPLICATIONS') or 
+            member.has_permission('MANAGE_APPLICATIONS')
+        )
     
     def __repr__(self) -> str:
         return f"<Company(id={self.id}, name='{self.name}', active={self.is_active})>"
