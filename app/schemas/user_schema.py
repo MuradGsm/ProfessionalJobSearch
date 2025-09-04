@@ -1,5 +1,6 @@
 from pydantic import BaseModel, EmailStr, Field, validator
 from enum import Enum
+from typing import Optional
 
 class UserRole(str, Enum):
     candidate = 'candidate'
@@ -30,6 +31,7 @@ class UserResponse(BaseModel):
     email: EmailStr
     is_admin: bool = False
     is_active: bool = True
+    company_id: Optional[int] = None
 
     class Config:
         from_attributes = True 

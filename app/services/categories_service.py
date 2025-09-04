@@ -91,4 +91,4 @@ class CategoryService:
             await self.session.delete(category)
             await self.session.commit()
         
-        return {'message': 'Category deleted'}  
+        return {'message': 'Category deleted'} 
