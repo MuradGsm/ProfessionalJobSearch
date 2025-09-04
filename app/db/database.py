@@ -1,12 +1,22 @@
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from sqlalchemy.orm import DeclarativeBase, mapped_column, Mapped, declared_attr
 from sqlalchemy import func
+from sqlalchemy.pool import QueuePool
 from typing import Annotated
 from datetime import datetime
 from app.config.setting import settings
 
 
-engine = create_async_engine(settings.DATA_URL, echo=True)
+engine = create_async_engine(
+    settings.DATA_URL,
+    echo=True,  
+    pool_size=20,        
+    max_overflow=30,      
+    pool_timeout=30,      
+    pool_recycle=3600,    
+    pool_pre_ping=True,   
+    poolclass=QueuePool
+)
 async_session  = async_sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)
 
 async def get_session() -> AsyncSession:

@@ -13,7 +13,16 @@ class AuditLog(Base):
     new_values: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
     user_id: Mapped[Optional[int]] = mapped_column(ForeignKey('user.id'), nullable=True)
     ip_address: Mapped[str] = mapped_column(String(45), nullable=True)
+    session_id: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    user_agent: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+    request_id: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
 
+    __table_args__ = (
+        Index('idx_audit_table_action', 'table_name', 'action'),
+        Index('idx_audit_user_action', 'user_id', 'action', 'created_at'),
+        Index('idx_audit_ip', 'ip_address'),
+        Index('idx_audit_session', 'session_id'),
+    )
 
 class RateLimit(Base):
     id: Mapped[pk_int]
@@ -25,4 +34,43 @@ class RateLimit(Base):
     __table_args__ = (
         Index('idx_rate_limit_identifier', 'identifier', 'endpoint'),
         Index('idx_rate_limit_window', 'window_start'),
+    )
+
+
+class PerformanceMetric(Base):
+    id: Mapped[pk_int]
+    endpoint: Mapped[str] = mapped_column(String(100), nullable=False)
+    method: Mapped[str] = mapped_column(String(10), nullable=False)
+    response_time: Mapped[float] = mapped_column(nullable=False)
+    status_code = Mapped[int] = mapped_column(nullable=False)
+    user_id = Mapped[Optional[int]] = mapped_column(ForeignKey('user.id'), nullable=True)
+    ip_address: Mapped = mapped_column(String(45), nullable=True)
+
+    _table_args__ = (
+        Index('idx_perf_endpoint', 'endpoint', 'created_at'),
+        Index('idx_perf_response_time', 'response_time'),
+        Index('idx_perf_status', 'status_code'),
+    )
+
+
+class CacheEntry(Base):
+    id: Mapped[pk_int] 
+    key: Mapped[str] = mapped_column(String(255), nullable=False, unique=True)
+    value: Mapped[dict] = mapped_column(JSON, nullable=False)
+    expires_at: Mapped[datetime] = mapped_column(nullable=False)
+    hit_count: Mapped[int] = mapped_column(default=0)
+    
+    __table_args__ = (
+        Index('idx_cache_expires', 'expires_at'),
+        Index('idx_cache_key', 'key'),
+    )
+
+class SchemaVersion(Base):
+    id: Mapped[pk_int]
+    version: Mapped[str] = mapped_column(String(20), nullable=False, unique=True)
+    description: Mapped[str] = mapped_column(String(500), nullable=False)
+    applied_by: Mapped[str] = mapped_column(String(100), nullable=False)
+    
+    __table_args__ = (
+        Index('idx_schema_version', 'version'),
     )

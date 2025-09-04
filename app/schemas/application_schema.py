@@ -19,7 +19,7 @@ class ApplicationResponse(ApplicationBase):
     user_id: int
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class ApplicationWithNotificationResponse(BaseModel):
@@ -27,4 +27,7 @@ class ApplicationWithNotificationResponse(BaseModel):
     notification: NotificationSchema
 
     class Config:
-        orm_mode = True
+        from_attributes = True
+
+
+        

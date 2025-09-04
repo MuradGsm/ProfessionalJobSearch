@@ -127,9 +127,9 @@ class Job(Base):
     applications_count: Mapped[int] = mapped_column(default=0)
     featured_until: Mapped[Optional[datetime]] = mapped_column(nullable=True)
 
-    is_aproved: Mapped[bool] = mapped_column(Boolean, default=False)
-    aproved_by: Mapped[Optional[int]] = mapped_column(ForeignKey('user.id'), nullable=True)
-    aproved_at: Mapped[Optional[datetime]] = mapped_column(nullable=True)
+    is_approved: Mapped[bool] = mapped_column(Boolean, default=False)
+    approved_by: Mapped[Optional[int]] = mapped_column(ForeignKey('user.id'), nullable=True)
+    approved_at: Mapped[Optional[datetime]] = mapped_column(nullable=True)
 
     benefits: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     requirements: Mapped[Optional[str]] = mapped_column(String, nullable=True)
@@ -144,8 +144,12 @@ class Job(Base):
     # Relationships
     category: Mapped["Categories"] = relationship("Categories", back_populates="jobs")
     applications: Mapped[list["Application"]] = relationship(
-        "Application", back_populates="job", cascade="all, delete-orphan"
-    )
+    "Application", 
+    back_populates="job", 
+    cascade="all, delete-orphan",
+    lazy="select",
+    order_by="Application.created_at.desc()"
+)
     company: Mapped["Company"] = relationship("Company", back_populates="jobs")
     
     skills: Mapped[list["Skill"]] = relationship(
@@ -170,17 +174,23 @@ class Job(Base):
         Index('idx_job_education_level', 'education_level'),
         Index('idx_job_skill_levels', 'skill_levels', postgresql_using='gin'),
         Index('idx_job_company_active', 'company_id', 'is_active'),
-        Index('idx_jobb_slug', 'slug'),
-        Index('idx_job_approved', 'is_aproved'),
+        Index('idx_job_slug', 'slug'),
+        Index('idx_job_approved', 'is_approved'),
         Index('idx_job_featured', 'is_featured', 'featured_until'),
         Index('idx_job_priority', 'priority_score'),
         Index('idx_job_deleted', 'deleted_at'),
         Index('idx_job_search', 'title', 'location', postgresql_using='gin'),
+        Index('idx_job_location_salary', 'location', 'salary'),
+        Index('idx_job_category_featured', 'category_id', 'is_featured', 'priority_score'),
+        Index('idx_job_active_approved_featured', 'is_active', 'is_approved', 'is_featured'),
 
         CheckConstraint('salary > 0', name='check_positive_salary'),
         CheckConstraint('expires_at > created_at', name='check_future_expiry'),
         CheckConstraint('array_length(skill_levels, 1) <= 2', name='check_max_skill_levels'),
         CheckConstraint('array_length(skill_levels, 1) >= 1', name='check_min_skill_levels'),
+        CheckConstraint('char_length(trim(title)) > 0', name='check_title_not_empty'),
+        CheckConstraint('char_length(trim(description)) >= 50', name='check_description_length'),
+        CheckConstraint('expires_at > created_at + interval \'1 day\'', name='check_min_job_duration'),
     )
 
     # Business logic methods

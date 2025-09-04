@@ -158,7 +158,7 @@ class JobUpdate(BaseModel):
 
 class JobResponse(JobBase):
     id: int
-    user_id: int
+    company_id: int
     category_id: int
     is_active: bool
     created_at: datetime

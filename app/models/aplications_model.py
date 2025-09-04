@@ -1,7 +1,7 @@
 from enum import Enum
 from app.db.database import Base, pk_int
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy import ForeignKey, Enum as SQLEnum, Index, CheckConstraint
+from sqlalchemy import String, Boolean, ForeignKey, Enum as SQLEnum, Index, CheckConstraint
 from typing import Optional
 from datetime import datetime
 
@@ -34,7 +34,7 @@ class Application(Base):
         Index('idx_application_job', 'job_id'),
         Index('idx_application_status', 'status'),
         Index('idx_application_user_job', 'user_id', 'job_id', unique=True), 
-
+        Index('idx_application_status_reviewed', 'status', 'reviewed_at'),
         Index('idx_application_job_status', 'job_id', 'status'),
         Index('idx_application_user_status', 'user_id', 'status'),
         Index('idx_application_status_created', 'status', 'created_at'),

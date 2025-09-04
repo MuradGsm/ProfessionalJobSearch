@@ -39,7 +39,11 @@ class Message(Base):
         Index('idx_message_flagged', 'is_flagged'),
         Index('idx_message_deleted', 'deleted_at'),
         Index('idx_message_sender_ip', 'sender_id'),
-        CheckConstraint('length(text) <= 1000', name='chech_message_length')
+        Index('idx_message_chat_created', 'chat_id', 'created_at'),
+        Index('idx_message_unread_sender', 'recipient_id', 'is_read', 'sender_id'),
+        CheckConstraint('length(text) <= 1000', name='check_message_length'),
+        CheckConstraint('char_length(trim(text)) > 0', name='check_message_not_empty'),
+        CheckConstraint('sender_id != recipient_id', name='check_different_users'),
     )
 
     @staticmethod

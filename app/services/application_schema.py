@@ -7,7 +7,7 @@ from typing import List
 from app.models.aplications_model import Application, ApplicationStatus
 from app.models.jobs_model import Job
 from app.models.notifications_model import Notification
-from app.schemas.aplication_schema import ApplicationResponse, ApplicationWithNotificationResponse
+from app.schemas.application_schema import ApplicationResponse, ApplicationWithNotificationResponse
 from app.schemas.user_schema import UserResponse
 
 

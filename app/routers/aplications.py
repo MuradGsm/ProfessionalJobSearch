@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.database import get_session
-from app.services.aplications_service import (
+from app.services.application_schema import (
     get_all_applications_service,
     add_application_service,
     update_application_service,
@@ -9,7 +9,7 @@ from app.services.aplications_service import (
 )
 from app.utils.required import candidate_required
 from typing import List
-from app.schemas.aplication_schema import ApplicationResponse, ApplicationBase
+from app.schemas.application_schema import ApplicationResponse, ApplicationBase
 from app.schemas.user_schema import UserResponse
 
 

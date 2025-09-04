@@ -112,6 +112,8 @@ class Invitations(Base):
         Index('idx_invitation_stats', 'opened_at', 'clicked_at'),
 
         CheckConstraint('expires_at > created_at', name='check_future_expiry_invitation'),
+        CheckConstraint('char_length(trim(name)) >= 2', name='check_company_name_length'),
+        CheckConstraint('website IS NULL OR website ~ \'^https?://\'', name='check_valid_website'),
     )
 
     @property

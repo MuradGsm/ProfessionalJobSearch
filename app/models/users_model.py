@@ -1,7 +1,7 @@
 from app.db.database import Base, pk_int
 from app.auth.hash import hash_password, verify_password
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy import Boolean, String, Enum as SQLEnum, Index, ForeignKey
+from sqlalchemy import Boolean, String, Enum as SQLEnum, Index, ForeignKey, ARRAY
 from enum import Enum as PyEnum
 from typing import Optional
 from datetime import datetime, timedelta
@@ -23,17 +23,21 @@ class User(Base):
     email_verification_token: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     password_reset_token: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     password_reset_expires: Mapped[Optional[datetime]] = mapped_column(nullable=True)
+    two_factor_enabled: Mapped[bool] = mapped_column(Boolean, default=False)
+    backup_codes: Mapped[Optional[list[str]]] = mapped_column(ARRAY(String), nullable=True)
 
     last_login: Mapped[Optional[datetime]] = mapped_column(nullable=True)
     login_attempts: Mapped[int] = mapped_column(default=0)
     locked_until: Mapped[Optional[datetime]] = mapped_column(nullable=True)
     deleted_at: Mapped[Optional[datetime]] = mapped_column(nullable=True)
+    last_password_change: Mapped[Optional[datetime]] = mapped_column(nullable=True)
+    failed_login_ips: Mapped[Optional[list[str]]] = mapped_column(ARRAY(String(45)), nullable=True)
 
     # Relationships
     resumes: Mapped[list["Resume"]] = relationship("Resume", back_populates="user", cascade="all, delete-orphan")
     applications: Mapped[list["Application"]] = relationship("Application", back_populates="user", cascade="all, delete-orphan")
     notifications: Mapped[list["Notification"]] = relationship("Notification", back_populates="user", cascade="all, delete-orphan")
-    sent_messages: Mapped[list["Message"]] = relationship("Message", foreign_keys="Message.sender_id", back_populates="sender", cascade="all, delete-orphan")
+    sent_messages: Mapped[list["Message"]] = relationship("Message", foreign_keys="Message.sender_id", back_populates="sender", cascade="all, delete-orphan", lazy="dynamic")
     received_messages: Mapped[list["Message"]] = relationship("Message", foreign_keys="Message.recipient_id", back_populates="recipient", cascade="all, delete-orphan")
     company_membership: Mapped[Optional["CompanyMember"]] = relationship("CompanyMember", back_populates="user")
     owner_company: Mapped[Optional["Company"]] = relationship("Company", foreign_keys="Company.owner_id", back_populates="owner")
@@ -62,6 +66,12 @@ class User(Base):
     def unlock_account(self):
         self.locked_until = None
         self.login_attempts = 0
+
+    def should_force_password_change(self, days: int = 90) -> bool:
+        if not self.last_password_change:
+            return True
+        return (datetime.utcnow() - self.last_password_change).days > days
+
 
     def __repr__(self) -> str:
         return f"<User(id={self.id}, email={self.email}, role={self.role})>"
