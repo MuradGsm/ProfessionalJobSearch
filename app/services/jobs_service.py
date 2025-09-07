@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import selectinload, joinedload
 
-from app.config.cache import CacheMnager
+from app.config.cache import CacheManager
 from app.services.categories_service import CategoryService
 from app.models.jobs_model import Job, Tag, Skill
 from app.models.company_model import Company
@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 
 class JobService:
 
-    def __init__(self, session: AsyncSession, cache_manager: Optional[CacheMnager] = None):
+    def __init__(self, session: AsyncSession, cache_manager: Optional[CacheManager] = None):
         self.session = session
         self.cache = cache_manager
         self.category_service = CategoryService(session)

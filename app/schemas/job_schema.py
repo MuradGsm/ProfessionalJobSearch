@@ -1,9 +1,8 @@
-from pydantic import BaseModel, Field, validator, root_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 from typing import List, Optional
 from datetime import datetime
 from enum import Enum
 
-# ===== ENUMS =====
 class EmploymentType(str, Enum):
     FULL_TIME = "full_time"
     PART_TIME = "part_time"
@@ -69,13 +68,15 @@ class JobBase(BaseModel):
     tags: List[str] = Field(default_factory=list, description="Additional tags for job")
     expires_at: datetime = Field(..., description="Job expiration date")
 
-    @validator('skill_levels')
+    @field_validator('skill_levels')
+    @classmethod
     def validate_skill_levels(cls, v):
         if len(v) != len(set(v)):
             raise ValueError('Skill levels must be unique')
         return v
 
-    @validator('skills_required')
+    @field_validator('skills_required')
+    @classmethod
     def validate_skills_required(cls, v):
         # Clean and deduplicate skills
         cleaned_skills = list(set(skill.strip().lower() for skill in v if skill.strip()))
@@ -85,7 +86,8 @@ class JobBase(BaseModel):
             raise ValueError('Maximum 20 technical skills allowed')
         return cleaned_skills
 
-    @validator('tags')
+    @field_validator('tags')
+    @classmethod
     def validate_tags(cls, v):
         if v:
             # Clean, deduplicate and limit tags
@@ -95,7 +97,8 @@ class JobBase(BaseModel):
             return cleaned_tags
         return []
 
-    @validator('expires_at')
+    @field_validator('expires_at')
+    @classmethod
     def validate_expires_at(cls, v):
         if v <= datetime.utcnow():
             raise ValueError('Expiration date must be in the future')
@@ -107,11 +110,12 @@ class JobBase(BaseModel):
         
         return v
 
-    @root_validator
+    @model_validator(mode='after')
+    @classmethod
     def validate_business_logic(cls, values):
-        employment_type = values.get('employment_type')
-        salary = values.get('salary')
-        skill_levels = values.get('skill_levels', [])
+        employment_type = values.employment_type
+        salary = values.salary
+        skill_levels = values.skill_levels or []
         
         # Special salary validation for internships
         if employment_type == EmploymentType.INTERNSHIP:
@@ -144,13 +148,15 @@ class JobUpdate(BaseModel):
     category_id: Optional[int] = None
     is_active: Optional[bool] = None
 
-    @validator('skill_levels')
+    @field_validator('skill_levels')
+    @classmethod
     def validate_skill_levels(cls, v):
         if v and len(v) != len(set(v)):
             raise ValueError('Skill levels must be unique')
         return v
 
-    @validator('expires_at')
+    @field_validator('expires_at')
+    @classmethod
     def validate_expires_at(cls, v):
         if v and v <= datetime.utcnow():
             raise ValueError('Expiration date must be in the future')
@@ -193,19 +199,21 @@ class JobSearchParams(BaseModel):
     include_expired: bool = Field(default=False, description="Include expired jobs in results")
     
     # Sorting
-    sort_by: Optional[str] = Field(default="created_at", regex="^(created_at|salary|expires_at|title)$")
-    sort_order: Optional[str] = Field(default="desc", regex="^(asc|desc)$")
+    sort_by: Optional[str] = Field(default="created_at", pattern="^(created_at|salary|expires_at|title)$")
+    sort_order: Optional[str] = Field(default="desc", pattern="^(asc|desc)$")
     
     # Pagination
     page: int = Field(default=1, ge=1, description="Page number")
     page_size: int = Field(default=20, ge=1, le=100, description="Items per page")
 
-    @validator('max_salary')
-    def validate_salary_range(cls, v, values):
-        min_salary = values.get('min_salary')
-        if min_salary is not None and v is not None and v < min_salary:
+    @model_validator(mode='after')
+    @classmethod
+    def validate_salary_range(cls, values):
+        min_salary = values.min_salary
+        max_salary = values.max_salary
+        if min_salary is not None and max_salary is not None and max_salary < min_salary:
             raise ValueError('max_salary must be greater than min_salary')
-        return v
+        return values
 
 # ===== STATISTICS SCHEMAS =====
 class JobStats(BaseModel):

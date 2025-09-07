@@ -6,9 +6,8 @@ from typing import Annotated
 from datetime import datetime
 from app.config.setting import settings
 
-
 engine = create_async_engine(
-    settings.DATA_URL,
+    settings.DATABASE_URL, 
     echo=True,  
     pool_size=20,        
     max_overflow=30,      
@@ -17,7 +16,7 @@ engine = create_async_engine(
     pool_pre_ping=True,   
     poolclass=QueuePool
 )
-async_session  = async_sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)
+async_session = async_sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)
 
 async def get_session() -> AsyncSession:
     async with async_session() as session:

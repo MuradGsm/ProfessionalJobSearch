@@ -28,7 +28,8 @@ class Notification(Base):
     priority: Mapped[str] = mapped_column(String(10), default='normal')
     expires_at: Mapped[Optional[datetime]] = mapped_column(nullable=True)
 
-    metadata: mapped_column[Optional[dict]] = mapped_column(JSON, nullable=True)
+    # ИСПРАВЛЕНО: переименовано metadata -> notification_data
+    notification_data: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
     related_id: Mapped[int] = mapped_column(nullable=True)  
     
     # Relationships

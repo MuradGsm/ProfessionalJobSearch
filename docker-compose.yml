@@ -11,6 +11,7 @@ services:
       - "8000:8000"
     depends_on:
       - db
+      - redis
     networks:
       - backend
       
@@ -25,8 +26,20 @@ services:
     networks:
       - backend
 
+  redis:  
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+    networks:
+      - backend
+    command: redis-server --appendonly yes --requirepass 12345
+
 volumes:
   pgdata:
+    driver: local
+  redisdata:  
     driver: local
 
 networks:

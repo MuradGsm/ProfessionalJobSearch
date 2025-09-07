@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr, Field, validator, root_validator
+from pydantic import BaseModel, EmailStr, Field, field_validator
 from enum import Enum
 from datetime import datetime
 from typing import List, Optional
@@ -27,7 +27,7 @@ class CompanyBase(BaseModel):
     website: Optional[str] = Field(None, max_length=255, description="Company website")
     logo_url: Optional[str] = Field(None, max_length=500, description="Company logo URL")
 
-    @validator('website')
+    @field_validator('website')
     def validate_website(cls, v):
         if v and not (v.startswith('http://') or v.startswith('https://')):
             return f"https://{v}"
@@ -63,7 +63,7 @@ class InvitationCreate(BaseModel):
     company_role: CompanyRole = Field(..., description="Role for invited user")
     permissions: List[CompanyPermission] = Field(default_factory=list, description="Permissions to grant")
 
-    @validator('permissions')
+    @field_validator('permissions')
     def validate_permissions_for_role(cls, v, values):
         role = values.get('company_role')
         
@@ -144,8 +144,8 @@ class CompanySearchParams(BaseModel):
     has_jobs: Optional[bool] = Field(None, description="Filter companies with active jobs")
     
     # Sorting
-    sort_by: Optional[str] = Field(default="created_at", regex="^(created_at|name|active_jobs_count)$")
-    sort_order: Optional[str] = Field(default="desc", regex="^(asc|desc)$")
+    sort_by: Optional[str] = Field(default="created_at", pattern="^(created_at|name|active_jobs_count)$")
+    sort_order: Optional[str] = Field(default="desc", pattern="^(asc|desc)$")
     
     # Pagination
     page: int = Field(default=1, ge=1)

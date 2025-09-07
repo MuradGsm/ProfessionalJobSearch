@@ -10,14 +10,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.schemas.job_schema import CategoryCreate, CategoryResponse, CategoryStats, CategoryUpdate
 from app.models.jobs_model import Categories, Job
-from app.config.cache import CacheMnager
+from app.config.cache import CacheManager
 from app.config.exceptions import BusinessLogicError, EntityNotFoundError, ValidationError
 
 
 logger = logging.getLogger(__name__)
 
 class CategoryService:
-    def __init__(self, session: AsyncSession, cache_manager: Optional[CacheMnager] = None):
+    def __init__(self, session: AsyncSession, cache_manager: Optional[CacheManager] = None):
         self.cache = cache_manager
         self.session = session
         self.cache_ttl = 3600
