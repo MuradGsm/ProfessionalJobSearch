@@ -21,7 +21,7 @@ async def app_exception_handler(request: Request, exc: BaseAppException):
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
     logger.error(f"Validation error: {exc.errors()}")
     
-    # Обработка ошибок валидации для JSON сериализации
+    
     errors = []
     for error in exc.errors():
         error_dict = {
@@ -37,7 +37,7 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
         content={
             'error': 'ValidationError',
             'message': 'Request validation failed',
-            'details': errors  # Теперь это JSON-сериализуемо
+            'details': errors  
         }
     )
 

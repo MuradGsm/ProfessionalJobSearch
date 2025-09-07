@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr, Field, field_validator
+from pydantic import BaseModel, EmailStr, Field, field_validator, ConfigDict
 from enum import Enum
 from typing import Optional
 from datetime import datetime
@@ -10,7 +10,7 @@ class UserRole(str, Enum):
 # ===== USER REGISTRATION & LOGIN =====
 class UserRequest(BaseModel):
     name: str = Field(..., min_length=2, max_length=100)
-    role: UserRole = Field(..., description="Choose role", example="candidate")
+    role: UserRole = Field(..., description="Choose role", json_schema_extra={"example": "candidate"})
     email: EmailStr
     password: str = Field(..., min_length=8)
 
@@ -49,8 +49,7 @@ class UserResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-        from_attributes = True 
+    model_config = ConfigDict(from_attributes=True) 
 
 class UserProfile(BaseModel):
     """Extended user profile information"""
@@ -74,8 +73,7 @@ class UserProfile(BaseModel):
     unread_notifications: int = 0
     unread_messages: int = 0
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 # ===== USER UPDATES =====
 class UserUpdate(BaseModel):
@@ -184,7 +182,7 @@ class UserAdminUpdate(BaseModel):
 # ===== BULK OPERATIONS =====
 class BulkUserAction(BaseModel):
     """Bulk operations on users"""
-    user_ids: list[int] = Field(..., min_items=1, max_items=100)
+    user_ids: list[int] = Field(..., min_length=1, max_length=100)
     action: str = Field(..., pattern="^(activate|deactivate|delete|verify_email)$")
 
 # ===== USER STATISTICS =====
