@@ -1,5 +1,5 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from  typing import Optional
+from typing import Optional
 
 class Settings(BaseSettings):
     POSTGRES_USER: str
@@ -24,16 +24,15 @@ class Settings(BaseSettings):
     RATE_LIMIT_PER_MINUTE: int = 60
 
     SMTP_SERVER: Optional[str] = None
-    SMTP_PORT = 587
-    SMTP_USERNAME = Optional[str] = None
-    SMTP_PASSWORD = Optional[str] = None
+    SMTP_PORT: int = 587 
+    SMTP_USERNAME: Optional[str] = None  
+    SMTP_PASSWORD: Optional[str] = None
 
-    ENVIORONMENT: str = 'development'
+    ENVIRONMENT: str = 'development' 
     DEBUG: bool = False
     
-
     @property
-    def DATA_URL(self):
+    def DATABASE_URL(self): 
         return (
             f"postgresql+asyncpg://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@"
             f"{self.POSTGRES_HOST}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
@@ -41,8 +40,10 @@ class Settings(BaseSettings):
     
     @property
     def REDIS_URL(self):
-        auth = f":{self.REDIS_PASSWORD}@" if self.REDIS_PASSWORD else ""
-        return f"redis://{auth}{self.REDIS_HOST}:{self.REDIS_PORT}/{self.REDIS_DB}"
+        if self.REDIS_PASSWORD:
+            return f"redis://:{self.REDIS_PASSWORD}@{self.REDIS_HOST}:{self.REDIS_PORT}/{self.REDIS_DB}"
+        else:
+            return f"redis://{self.REDIS_HOST}:{self.REDIS_PORT}/{self.REDIS_DB}"
 
     model_config = SettingsConfigDict(
         env_file='.env',

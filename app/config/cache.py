@@ -5,7 +5,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-class CacheMnager:
+class CacheManager:  
     def __init__(self, redis_client: Redis):
         self.redis = redis_client
 
@@ -23,7 +23,7 @@ class CacheMnager:
         except Exception as e:
             logger.error(f'Cache set error: {e}')
 
-    async def delete(self, key:str):
+    async def delete(self, key: str):
         try:
             await self.redis.delete(key)
         except Exception as e:
