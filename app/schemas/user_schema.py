@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr, Field, field_validator, ConfigDict
+from pydantic import BaseModel, EmailStr, Field, field_validator, ConfigDict, ValidationInfo
 from enum import Enum
 from typing import Optional
 from datetime import datetime
@@ -104,10 +104,11 @@ class ChangePasswordRequest(BaseModel):
         return v
 
     @field_validator('confirm_password')
-    def passwords_match(cls, v, values):
-        if 'new_password' in values and v != values['new_password']:
+    def passwords_match(cls, v: str, info: ValidationInfo) -> str:
+        if info.data.get('new_password') and v != info.data.get('new_password'):
             raise ValueError('Passwords do not match')
         return v
+
 
 # ===== PASSWORD RESET =====
 class PasswordResetRequest(BaseModel):
