@@ -1,6 +1,6 @@
 import pytest
 from pydantic import ValidationError
-from app.schemas.user_schema import UserRequest, UserRole, UserResponse, UserProfile, UserUpdate, ChangePasswordRequest
+from app.schemas.user_schema import UserRequest, UserRole, UserResponse, UserProfile, UserUpdate, ChangePasswordRequest, UserSearchParams
 from datetime import datetime
 
 class TestUserRequest:
@@ -597,3 +597,83 @@ class TestChangePasswordRequest:
         error = exc_info.value.errors()[0]
         assert error['loc'] == ('confirm_password',)
         assert 'Passwords do not match' in error['msg']
+
+
+class TestUserSearchParams:
+    def test_valid_params(self):
+        now = datetime.utcnow()
+        valid_data = {
+            "name": "John Doe",
+            "email": "john@example.com",
+            "role": "candidate", 
+            "is_active": True,
+            "is_admin": False,
+            'email_verified': True, 
+            'has_company': False,
+            'created_after': now,
+            'created_before': now,
+            'last_login_after': now,
+        }
+        params = UserSearchParams(**valid_data)
+
+        assert params.name == "John Doe"
+        assert params.email == "john@example.com"
+        assert params.role == UserRole.candidate
+        assert params.is_active == True
+        assert params.is_admin == False
+        assert params.email_verified == True
+        assert params.has_company == False
+        assert params.created_after == now
+        assert params.created_before == now
+        assert params.last_login_after == now
+
+    def test_valid_data_empty(self):
+        data = {
+        }
+        params = UserSearchParams(**data)
+
+        assert params.name is None
+
+    def test_page_zero_invalid(self):
+        data = {
+            'page': 0
+        }
+
+        with pytest.raises(ValidationError):
+            UserSearchParams(**data)
+        
+    def test_page_size_great_hundret_invalid(self):
+        data = {
+            'page_size': 101
+        }
+
+        with pytest.raises(ValidationError):
+            UserSearchParams(**data)
+            
+    def test_default_sorting(self):
+        params = UserSearchParams()
+        assert params.sort_by == "created_at"
+        assert params.sort_order == "desc"
+
+    def test_valid_sorting_fields(self):
+        valid_fields = ["created_at", "name", "email", "last_login"]
+        for field in valid_fields:
+            params = UserSearchParams(sort_by=field, sort_order="asc")
+            assert params.sort_by == field
+            assert params.sort_order == "asc"
+
+    def test_invalid_sort_by_field(self):
+        with pytest.raises(ValidationError):
+            UserSearchParams(sort_by="invalid_field")
+
+    def test_invalid_sort_order(self):
+        with pytest.raises(ValidationError):
+            UserSearchParams(sort_order="descending")
+
+        
+
+
+        
+
+
+        
