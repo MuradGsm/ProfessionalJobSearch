@@ -1,9 +1,9 @@
 from app.db.database import Base, pk_int
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy import String, Boolean, ForeignKey, Float, Integer, Index, Enum as SQLEnum, CheckConstraint, Table, Column, ARRAY
+from sqlalchemy import String, Boolean, ForeignKey, Float, Integer, Index, Enum as SQLEnum, CheckConstraint, Table, Column, ARRAY, Text
 from datetime import datetime
 from typing import Optional
-from app.schemas.job_schema import EducationLevel, SkillLevel, EmploymentType
+from app.utils.enums import EducationLevel, SkillLevel, EmploymentType
 
 # Association tables
 job_skills = Table(
@@ -108,12 +108,13 @@ class Tag(Base):
 class Job(Base):
     id: Mapped[pk_int]
     title: Mapped[str] = mapped_column(String(200), nullable=False)
-    description: Mapped[str] = mapped_column(String, nullable=False)
+    description: Mapped[str] = mapped_column(Text, nullable=False)  # Changed from String to Text
     salary: Mapped[float] = mapped_column(Float, nullable=False)
     location: Mapped[str] = mapped_column(String(100), nullable=False)
     employment_type: Mapped[EmploymentType] = mapped_column(SQLEnum(EmploymentType), nullable=False)
     education_level: Mapped[Optional[EducationLevel]] = mapped_column(SQLEnum(EducationLevel), nullable=True)
-    skill_levels: Mapped[list[SkillLevel]] = mapped_column(ARRAY(SQLEnum(SkillLevel)), nullable=False)
+    # Changed: Use simple list of strings instead of ARRAY with Enum
+    skill_levels: Mapped[list[str]] = mapped_column(ARRAY(String(20)), nullable=False, default=[])
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     expires_at: Mapped[datetime] = mapped_column(nullable=False)
     category_id: Mapped[int] = mapped_column(ForeignKey("categories.id"), nullable=False)
@@ -131,25 +132,24 @@ class Job(Base):
     approved_by: Mapped[Optional[int]] = mapped_column(ForeignKey('user.id'), nullable=True)
     approved_at: Mapped[Optional[datetime]] = mapped_column(nullable=True)
 
-    benefits: Mapped[Optional[str]] = mapped_column(String, nullable=True)
-    requirements: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    benefits: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # Changed to Text
+    requirements: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # Changed to Text
 
     is_featured: Mapped[bool] = mapped_column(Boolean, default=False)
     priority_score: Mapped[int] = mapped_column(default=0)
 
     deleted_at: Mapped[Optional[datetime]] = mapped_column(nullable=True)
-    deleted_by: Mapped[Optional[int]] =  mapped_column(ForeignKey('user.id'), nullable=True)
-
+    deleted_by: Mapped[Optional[int]] = mapped_column(ForeignKey('user.id'), nullable=True)
 
     # Relationships
     category: Mapped["Categories"] = relationship("Categories", back_populates="jobs")
     applications: Mapped[list["Application"]] = relationship(
-    "Application", 
-    back_populates="job", 
-    cascade="all, delete-orphan",
-    lazy="select",
-    order_by="Application.created_at.desc()"
-)
+        "Application", 
+        back_populates="job", 
+        cascade="all, delete-orphan",
+        lazy="select",
+        order_by="Application.created_at.desc()"
+    )
     company: Mapped["Company"] = relationship("Company", back_populates="jobs")
     
     skills: Mapped[list["Skill"]] = relationship(
@@ -172,6 +172,7 @@ class Job(Base):
         Index('idx_job_salary', 'salary'),
         Index('idx_job_employment_type', 'employment_type'),
         Index('idx_job_education_level', 'education_level'),
+        # Fixed: Use GIN index for array of strings
         Index('idx_job_skill_levels', 'skill_levels', postgresql_using='gin'),
         Index('idx_job_company_active', 'company_id', 'is_active'),
         Index('idx_job_slug', 'slug'),
@@ -179,17 +180,19 @@ class Job(Base):
         Index('idx_job_featured', 'is_featured', 'featured_until'),
         Index('idx_job_priority', 'priority_score'),
         Index('idx_job_deleted', 'deleted_at'),
-        Index('idx_job_search', 'title', 'location', postgresql_using='gin'),
+        # Fixed: Removed problematic GIN index for varchar, use regular btree composite index
+        Index('idx_job_title_location', 'title', 'location'),
         Index('idx_job_location_salary', 'location', 'salary'),
         Index('idx_job_category_featured', 'category_id', 'is_featured', 'priority_score'),
         Index('idx_job_active_approved_featured', 'is_active', 'is_approved', 'is_featured'),
 
         CheckConstraint('salary > 0', name='check_positive_salary'),
         CheckConstraint('expires_at > created_at', name='check_future_expiry'),
-        CheckConstraint('array_length(skill_levels, 1) <= 2', name='check_max_skill_levels'),
-        CheckConstraint('array_length(skill_levels, 1) >= 1', name='check_min_skill_levels'),
-        CheckConstraint('char_length(trim(title)) > 0', name='check_title_not_empty'),
-        CheckConstraint('char_length(trim(description)) >= 50', name='check_description_length'),
+        # Fixed: Use cardinality instead of array_length for PostgreSQL
+        CheckConstraint('cardinality(skill_levels) <= 2', name='check_max_skill_levels'),
+        CheckConstraint('cardinality(skill_levels) >= 1', name='check_min_skill_levels'),
+        CheckConstraint('length(trim(title)) > 0', name='check_title_not_empty'),
+        CheckConstraint('length(description) >= 50', name='check_description_length'),
         CheckConstraint('expires_at > created_at + interval \'1 day\'', name='check_min_job_duration'),
     )
 

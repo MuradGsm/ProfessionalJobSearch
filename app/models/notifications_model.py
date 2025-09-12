@@ -1,15 +1,10 @@
 from app.db.database import Base, pk_int
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy import String, Boolean, ForeignKey, Enum as SQLEnum, Index, JSON
-from enum import Enum
+from app.utils.enums import NotificationType
 from typing import Optional
 from datetime import datetime
 
-class NotificationType(str, Enum):
-    message = "message" 
-    application = "application"
-    job_update = "job_update"
-    system = "system"
 
 class Notification(Base):
     id: Mapped[pk_int]
@@ -28,9 +23,10 @@ class Notification(Base):
     priority: Mapped[str] = mapped_column(String(10), default='normal')
     expires_at: Mapped[Optional[datetime]] = mapped_column(nullable=True)
 
-    # ИСПРАВЛЕНО: переименовано metadata -> notification_data
+    # Fixed: Changed metadata -> notification_data and made it Optional
     notification_data: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
-    related_id: Mapped[int] = mapped_column(nullable=True)  
+    # Fixed: Made related_id Optional
+    related_id: Mapped[Optional[int]] = mapped_column(nullable=True)  
     
     # Relationships
     user: Mapped["User"] = relationship("User", back_populates="notifications")

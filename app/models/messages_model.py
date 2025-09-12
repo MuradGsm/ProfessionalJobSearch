@@ -14,7 +14,7 @@ class Message(Base):
 
     reply_to_id: Mapped[Optional[int]] = mapped_column(ForeignKey('message.id'), nullable=True)
     message_type: Mapped[Optional[str]] = mapped_column(String(20), default='text')
-    file_url: Mapped[Optional[str]] =mapped_column(String(500), nullable=True)
+    file_url: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
 
     is_flagged: Mapped[bool] = mapped_column(Boolean, default=False)
     flagged_reason: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
@@ -38,11 +38,13 @@ class Message(Base):
         Index('idx_message_type', 'message_type'),
         Index('idx_message_flagged', 'is_flagged'),
         Index('idx_message_deleted', 'deleted_at'),
-        Index('idx_message_sender_ip', 'sender_id'),
+        # Fixed: Removed duplicate index name
+        Index('idx_message_sender_ip_addr', 'sender_ip'),  # Fixed name
         Index('idx_message_chat_created', 'chat_id', 'created_at'),
         Index('idx_message_unread_sender', 'recipient_id', 'is_read', 'sender_id'),
         CheckConstraint('length(text) <= 1000', name='check_message_length'),
-        CheckConstraint('char_length(trim(text)) > 0', name='check_message_not_empty'),
+        # Fixed: Use length instead of char_length for consistency
+        CheckConstraint('length(trim(text)) > 0', name='check_message_not_empty'),
         CheckConstraint('sender_id != recipient_id', name='check_different_users'),
     )
 

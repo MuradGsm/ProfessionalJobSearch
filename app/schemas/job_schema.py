@@ -1,33 +1,8 @@
 from pydantic import BaseModel, Field, field_validator, model_validator
 from typing import List, Optional
 from datetime import datetime
-from enum import Enum
+from app.utils.enums import EducationLevel,EmploymentType, SkillLevel
 
-class EmploymentType(str, Enum):
-    FULL_TIME = "full_time"
-    PART_TIME = "part_time"
-    CONTRACT = "contract"
-    REMOTE = "remote"
-    INTERNSHIP = "internship"
-    FREELANCE = "freelance"
-    HYBRID = "hybrid"
-
-class EducationLevel(str, Enum):
-    NO_EDUCATION = "no_education"
-    HIGH_SCHOOL = "high_school"
-    VOCATIONAL = "vocational"
-    BACHELOR = "bachelor"
-    MASTER = "master"
-    PHD = "phd"
-    CERTIFICATION = "certification"
-
-class SkillLevel(str, Enum):
-    INTERN = "intern"
-    JUNIOR = "junior"
-    MIDDLE = "middle"
-    SENIOR = "senior"
-    LEAD = "lead"
-    PRINCIPAL = "principal"
 
 # ===== CATEGORY SCHEMAS =====
 class CategoryBase(BaseModel):

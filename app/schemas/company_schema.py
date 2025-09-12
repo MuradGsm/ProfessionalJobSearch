@@ -1,23 +1,8 @@
 from pydantic import BaseModel, EmailStr, Field, field_validator
-from enum import Enum
+from app.utils.enums import CompanyRole, CompanyPermission
 from datetime import datetime
 from typing import List, Optional
 
-# ===== ENUMS =====
-class CompanyRole(str, Enum):
-    OWNER = "owner"
-    RECRUITER = "recruiter"
-    HR_MANAGER = "hr_manager"
-
-class CompanyPermission(str, Enum):
-    MANAGE_JOBS = "manage_jobs"
-    CREATE_JOBS = "create_jobs"
-    EDIT_JOBS = "edit_jobs"
-    DELETE_JOBS = "delete_jobs"
-    VIEW_APPLICATIONS = "view_applications"
-    MANAGE_APPLICATIONS = "manage_applications"
-    INVITE_MEMBERS = "invite_members"
-    MANAGE_MEMBERS = "manage_members"
 
 # ===== COMPANY SCHEMAS =====
 class CompanyBase(BaseModel):

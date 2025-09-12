@@ -1,16 +1,11 @@
 from pydantic import BaseModel
 from app.schemas.notification_schema import NotificationSchema
-from enum import Enum
-
-
-class ApplicationStatusEnum(str, Enum):
-    SENT = "sent"
-    REVIEWED = "reviewed"
-    REJECTED = "rejected"
+from app.utils.enums import ApplicationStatus
 
 
 class ApplicationBase(BaseModel):
-    status: ApplicationStatusEnum = ApplicationStatusEnum.SENT
+    # ИСПРАВЛЕНО: ApplicationStatus вместо ApplicationStatusEnum
+    status: ApplicationStatus = ApplicationStatus.SENT
     job_id: int
 
 
@@ -28,6 +23,4 @@ class ApplicationWithNotificationResponse(BaseModel):
 
     class Config:
         from_attributes = True
-
-
         

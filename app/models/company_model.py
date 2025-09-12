@@ -1,7 +1,7 @@
 from app.db.database import Base, pk_int
-from app.schemas.company_schema import CompanyRole
+from app.utils.enums import CompanyRole
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy import String, Boolean, ForeignKey, Index, Enum as SQLEnum, DateTime, UniqueConstraint, CheckConstraint, ARRAY, func, select
+from sqlalchemy import String, Boolean, ForeignKey, Index, Enum as SQLEnum, DateTime, UniqueConstraint, CheckConstraint, ARRAY, func
 from typing import Optional, List
 from datetime import datetime
 
@@ -10,15 +10,23 @@ class Company(Base):
     name: Mapped[str] = mapped_column(String(200), nullable=False, unique=True)
     description: Mapped[str] = mapped_column(String(1000), nullable=False)
     industry: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
-    website: Mapped[Optional[str]] =mapped_column(String(255), nullable=True)
+    website: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     logo_url: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     owner_id: Mapped[int] = mapped_column(ForeignKey('user.id'), nullable=False, unique=True)
 
-    owner: Mapped['User'] = relationship('User', foreign_keys=[owner_id], back_populates='owner_company')
+    # Fixed: Changed relationship to match User model
+    owner: Mapped["User"] = relationship(
+        "User",
+        foreign_keys=[owner_id],
+        back_populates="owned_company"
+    )
+
     members: Mapped[List['CompanyMember']] = relationship('CompanyMember', back_populates='company', cascade='all, delete-orphan')
     jobs: Mapped[List['Job']] = relationship('Job', back_populates='company', cascade='all, delete-orphan', lazy='select')
-    invitations: Mapped[List['Invitations']] = relationship('Invitations', back_populates='company', cascade='all, delete-orphan')
+    invitations: Mapped[List['Invitation']] = relationship(
+        'Invitation', back_populates='company', cascade='all, delete-orphan'
+    )
 
     __table_args__ = (
         Index('idx_company_name', 'name'),
@@ -28,8 +36,6 @@ class Company(Base):
         Index('idx_company_active_industry', 'is_active', 'industry')
     )
 
-        
-   
     def get_member_by_user_id(self, user_id: int) -> Optional['CompanyMember']:
         """Get company member by user ID"""
         return next((member for member in self.members if member.user_id == user_id and member.is_active), None)
@@ -82,7 +88,7 @@ class Company(Base):
         return f"<Company(id={self.id}, name='{self.name}', active={self.is_active})>"
     
 
-class Invitations(Base):
+class Invitation(Base):
     id: Mapped[pk_int]
     email: Mapped[str] = mapped_column(String(255), nullable=False)
     company_role: Mapped[CompanyRole] = mapped_column(SQLEnum(CompanyRole), nullable=False)
@@ -99,10 +105,7 @@ class Invitations(Base):
     company: Mapped['Company'] = relationship('Company', back_populates='invitations')
     inviter: Mapped['User'] = relationship('User', foreign_keys=[invited_by])
 
-
     __table_args__ = (
-        UniqueConstraint('email', 'company_id', 'is_used', name='uq_email_company_unused'),
-
         Index('idx_invitation_email', 'email'),
         Index('idx_invitation_token', 'token'),
         Index('idx_invitation_company', 'company_id'),
@@ -110,10 +113,6 @@ class Invitations(Base):
         Index('idx_invitation_unused', 'is_used', 'expires_at'),
         Index('idx_invitation_sender_ip', 'sender_ip'),
         Index('idx_invitation_stats', 'opened_at', 'clicked_at'),
-
-        CheckConstraint('expires_at > created_at', name='check_future_expiry_invitation'),
-        CheckConstraint('char_length(trim(name)) >= 2', name='check_company_name_length'),
-        CheckConstraint('website IS NULL OR website ~ \'^https?://\'', name='check_valid_website'),
     )
 
     @property
@@ -166,9 +165,6 @@ class CompanyMember(Base):
         Index('idx_member_active', 'is_active'),
         Index('idx_member_role', 'company_role'),
         Index('idx_member_permissions', 'permissions', postgresql_using='gin'),
-        
-        # Constraints
-        CheckConstraint("company_role != 'owner'", name='check_no_owner_role'),  # Owner managed separately
     )
 
     def has_permission(self, permission: str) -> bool:

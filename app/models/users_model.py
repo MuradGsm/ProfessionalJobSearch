@@ -1,14 +1,11 @@
-from app.db.database import Base, pk_int  
+from app.db.database import Base, pk_int 
 from app.auth.hash import hash_password, verify_password
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy import Boolean, String, Enum as SQLEnum, Index, ForeignKey, ARRAY
-from enum import Enum as PyEnum
+from app.utils.enums import UserRole
 from typing import Optional
 from datetime import datetime, timedelta
 
-class UserRole(str, PyEnum):
-    candidate = "candidate"
-    employer = "employer"
 
 class User(Base):
     id: Mapped[pk_int]
@@ -36,13 +33,46 @@ class User(Base):
     failed_login_ips: Mapped[Optional[list[str]]] = mapped_column(ARRAY(String(45)), nullable=True)
 
     # Relationships
+    # Fixed: Removed string quotes from foreign_keys
+    applications: Mapped[list["Application"]] = relationship(
+        "Application",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        foreign_keys="Application.user_id"
+    )
+    
+    reviewed_applications: Mapped[list["Application"]] = relationship(
+        "Application",
+        back_populates="reviewer",
+        cascade="all, delete-orphan",
+        foreign_keys="Application.reviewed_by"
+    )
+    
     resumes: Mapped[list["Resume"]] = relationship("Resume", back_populates="user", cascade="all, delete-orphan")
-    applications: Mapped[list["Application"]] = relationship("Application", back_populates="user", cascade="all, delete-orphan")
     notifications: Mapped[list["Notification"]] = relationship("Notification", back_populates="user", cascade="all, delete-orphan")
-    sent_messages: Mapped[list["Message"]] = relationship("Message", foreign_keys="Message.sender_id", back_populates="sender", cascade="all, delete-orphan", lazy="dynamic")
-    received_messages: Mapped[list["Message"]] = relationship("Message", foreign_keys="Message.recipient_id", back_populates="recipient", cascade="all, delete-orphan")
+    
+    # Fixed: Removed string quotes from foreign_keys
+    sent_messages: Mapped[list["Message"]] = relationship(
+        "Message", 
+        foreign_keys="Message.sender_id", 
+        back_populates="sender", 
+        cascade="all, delete-orphan", 
+        lazy="dynamic"
+    )
+    
+    received_messages: Mapped[list["Message"]] = relationship(
+        "Message", 
+        foreign_keys="Message.recipient_id", 
+        back_populates="recipient", 
+        cascade="all, delete-orphan"
+    )
+    
     company_membership: Mapped[Optional["CompanyMember"]] = relationship("CompanyMember", back_populates="user")
-    owned_company: Mapped[Optional["Company"]] = relationship("Company", foreign_keys="Company.owner_id", back_populates="owner")
+    owned_company: Mapped[Optional["Company"]] = relationship(
+        "Company",
+        foreign_keys="Company.owner_id",
+        back_populates="owner"  # Changed from "users" to "owner"
+    )
 
     __table_args__ = (
         Index('idx_user_email', 'email'),

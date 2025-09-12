@@ -1,11 +1,7 @@
 from pydantic import BaseModel, EmailStr, Field, field_validator, ConfigDict, ValidationInfo
-from enum import Enum
+from app.utils.enums import UserRole
 from typing import Optional
 from datetime import datetime
-
-class UserRole(str, Enum):
-    candidate = 'candidate'
-    employer = 'employer'
 
 # ===== USER REGISTRATION & LOGIN =====
 class UserRequest(BaseModel):

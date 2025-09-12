@@ -1,12 +1,6 @@
 from pydantic import BaseModel, Field
 from datetime import datetime
-from enum import Enum
-
-class NotificationType(str, Enum):
-    message = "message"
-    application = "application"
-    job_update = "job_update"
-    system = "system"
+from app.utils.enums import NotificationType
 
 class NotificationCreate(BaseModel):
     user_id: int = Field(..., gt=0)

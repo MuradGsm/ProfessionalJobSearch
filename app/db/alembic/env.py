@@ -10,7 +10,7 @@ from app.config.setting import settings
 
 # Import all models for auto-generation
 from app.models.users_model import User
-from app.models.company_model import Company, CompanyMember, Invitations
+from app.models.company_model import Company, CompanyMember, Invitation
 from app.models.jobs_model import Job, Categories, Skill, Tag
 from app.models.aplications_model import Application
 from app.models.resumes_model import Resume
