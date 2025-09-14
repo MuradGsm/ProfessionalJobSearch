@@ -5,21 +5,19 @@ from app.schemas.user_schema import EmailVerificationRequest, EmailVerificationC
 from app.services.users_service import user_service
 from app.config.user_exceptions import InvalidTokenError
 
-router = APIRouter(prefix="/email", tags=["Email Verification"])
+router = APIRouter()
 
-@router.post("/verify", summary="Verify user email with token")
-async def verify_email(
-    data: EmailVerificationConfirm,
-    db: AsyncSession = Depends(get_session)
-):
+@router.get("/verify", summary="Verify user email via link")
+async def verify_email_get(token: str, db: AsyncSession = Depends(get_session)):
     try:
-        await user_service.verify_email(db, data.token)
+        await user_service.verify_email(db, token)
         return {"message": "Email verified successfully"}
     except InvalidTokenError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e)
         )
+
 
 @router.post("/resend", summary="Resend email verification link")
 async def resend_verification(

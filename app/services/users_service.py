@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+import secrets
 from typing import Optional, List
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update, delete, func, and_, or_
@@ -70,10 +71,14 @@ class UserService:
             await db.refresh(user)
 
             try:
-                await email_service.send_verification_email(user.email, user.email_verification_token)
+                await email_service.send_verification_email(
+                    to_email=user.email,
+                    token=user.email_verification_token
+                )
                 await email_service.send_welcome_email(user.email, user.name)
-            except Exception as email_error:
-                logger.warning(f"Failed to send emails for user {user.email}: {str(email_error)}")
+            except Exception as e:
+                # Если email не отправился, это не должно ломать регистрацию
+                logger.warning(f"Failed to send emails for {user.email}: {str(e)}")
 
             logger.info(f"Created new user: {user.email} with role {user.role}")
             return user   # 👈 возвращаем ORM-модель
@@ -144,5 +149,25 @@ class UserService:
         user.email_verification_token = None
         db.add(user)
         await db.commit()
+
+    async def resend_verification_email(self, db: AsyncSession, email: str):
+        user = await self.get_user_by_email(db, email)
+        if not user:
+            return  # безопасно для безопасности
+
+        if user.email_verified:
+            return  # уже подтверждён, не нужно отправлять
+
+        # Генерируем новый токен
+        token = secrets.token_urlsafe(32)
+        user.email_verification_token = token
+
+        db.add(user)
+        await db.commit()
+        await db.refresh(user)
+
+        sent = await email_service.send_verification_email(user.email, token)
+        if not sent:
+            logger.warning(f"Failed to send verification email to {email}")
 
 user_service = UserService()

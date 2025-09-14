@@ -5,7 +5,7 @@ from fastapi.exceptions import RequestValidationError
 import time
 import logging
 
-from app.routers import auth
+from app.routers import auth, email
 from app.config.setting import settings
 from app.config.lifespan import lifespan
 from app.config.error_handler import (
@@ -73,6 +73,8 @@ async def health_check():
 
 # Include routers
 app.include_router(auth.router, prefix="/auth", tags=["Authentication"])
+app.include_router(email.router, prefix="/email", tags=["Email"])
+
 
 if __name__ == "__main__":
     import uvicorn

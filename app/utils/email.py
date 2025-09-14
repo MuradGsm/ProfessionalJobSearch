@@ -47,7 +47,7 @@ class EmailService:
         body = f"""
         <h2>Email Verification</h2>
         <p>Please click the link below to verify your email address:</p>
-        <a href="http://localhost:3000/verify-email?token={token}">Verify Email</a>
+        <a href="http://localhost:8000/auth/verify-email?token={token}">Verify Email</a>
         <p>If you didn't create an account, please ignore this email.</p>
         <p>This link will expire in 24 hours.</p>
         """
@@ -59,7 +59,7 @@ class EmailService:
         body = f"""
         <h2>Password Reset</h2>
         <p>You requested a password reset. Click the link below to reset your password:</p>
-        <a href="http://localhost:3000/reset-password?token={token}">Reset Password</a>
+        <a href="http://localhost:8000/auth/verify-email?token={token}">Reset Password</a>
         <p>If you didn't request this, please ignore this email.</p>
         <p>This link will expire in 1 hour.</p>
         """
