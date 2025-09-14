@@ -1,11 +1,11 @@
 from datetime import datetime, timedelta
-import secrets
 from typing import Optional, List
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update, delete, func, and_, or_
 from sqlalchemy.orm import selectinload
 from fastapi import HTTPException, status
 
+from app.utils.tokens import generate_secure_token, generate_password_reset_token
 from app.utils.enums import UserRole
 from app.models.users_model import User
 from app.schemas.user_schema import (
@@ -77,7 +77,6 @@ class UserService:
                 )
                 await email_service.send_welcome_email(user.email, user.name)
             except Exception as e:
-                # Если email не отправился, это не должно ломать регистрацию
                 logger.warning(f"Failed to send emails for {user.email}: {str(e)}")
 
             logger.info(f"Created new user: {user.email} with role {user.role}")
@@ -174,13 +173,12 @@ class UserService:
     async def resend_verification_email(self, db: AsyncSession, email: str):
         user = await self.get_user_by_email(db, email)
         if not user:
-            return  # безопасно для безопасности
+            return  
 
         if user.email_verified:
-            return  # уже подтверждён, не нужно отправлять
+            return  
 
-        # Генерируем новый токен
-        token = secrets.token_urlsafe(32)
+        token = generate_secure_token()
         user.email_verification_token = token
 
         db.add(user)
@@ -190,5 +188,41 @@ class UserService:
         sent = await email_service.send_verification_email(user.email, token)
         if not sent:
             logger.warning(f"Failed to send verification email to {email}")
+    
+    async def reset_password_service(self, db: AsyncSession, email: str):
+        user = await self.get_user_by_email(db, email)
+
+        if not user:
+            raise UserNotFoundError(f'User not found  {email}')
+    
+        token = generate_password_reset_token()
+        user.password_reset_token = token
+        user.password_reset_expires = datetime.utcnow() + timedelta(hours=1)
+        db.add(user)
+        await db.commit()
+        await db.refresh(user)
+
+        sent  = await email_service.send_password_reset_email(user.email, token)
+        if not sent:
+            logger.warning(f"Failed to send password reset email to {email}")
+
+    async def confirm_password_reset(self, db: AsyncSession, token: str, new_password: str):
+        user = await db.execute(select(User).where(User.password_reset_token == token))
+        user = user.scalar_one_or_none()
+
+        if not user:
+            raise InvalidTokenError('Invalid or expired token')
+        
+        if  user.password_reset_expires < datetime.utcnow():
+            raise InvalidTokenError('Token has expired')
+        
+        user.set_password(new_password)
+
+        user.password_reset_expires = None
+        user.password_reset_token = None
+
+        db.add(user)
+        await db.commit()
+
 
 user_service = UserService()

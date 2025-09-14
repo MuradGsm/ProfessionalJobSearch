@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr, Field, field_validator, ConfigDict, ValidationInfo
+from pydantic import BaseModel, EmailStr, Field, field_validator, ConfigDict, ValidationInfo, model_validator
 from app.utils.enums import UserRole
 from typing import Optional
 from datetime import datetime
@@ -103,11 +103,11 @@ class ChangePasswordRequest(BaseModel):
             raise ValueError('Password must contain at least one digit')
         return v
 
-    @field_validator('confirm_password')
-    def passwords_match(cls, v: str, info: ValidationInfo) -> str:
-        if info.data.get('new_password') and v != info.data.get('new_password'):
-            raise ValueError('Passwords do not match')
-        return v
+    @model_validator(mode="after")
+    def check_passwords_match(self):
+        if self.new_password != self.confirm_password:
+            raise ValueError("Passwords do not match")
+        return self
 
 
 # ===== PASSWORD RESET =====
@@ -131,11 +131,11 @@ class PasswordResetConfirm(BaseModel):
             raise ValueError('Password must contain at least one digit')
         return v
 
-    @field_validator('confirm_password')
-    def passwords_match(cls, v, values):
-        if 'new_password' in values and v != values['new_password']:
-            raise ValueError('Passwords do not match')
-        return v
+    @model_validator(mode="after")
+    def passwords_match(cls, values):
+        if values.new_password != values.confirm_password:
+            raise ValueError("Passwords do not match")
+        return values
 
 # ===== EMAIL VERIFICATION =====
 class EmailVerificationRequest(BaseModel):
