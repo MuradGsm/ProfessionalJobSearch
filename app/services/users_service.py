@@ -139,6 +139,27 @@ class UserService:
                 detail="Authentication failed"
             )
         
+    async def get_user_by_id(self, db: AsyncSession, user_id: int) -> Optional[User]:
+        """Get user by ID with relationships"""
+        try:
+            result = await db.execute(
+                select(User)
+                .options(
+                    selectinload(User.company_membership),
+                    selectinload(User.owned_company)
+                )
+                .where(and_(User.id == user_id, User.deleted_at.is_(None)))
+            )
+            return result.scalar_one_or_none()
+        except Exception as e:
+            logger.error(f"Error getting user by ID {user_id}: {str(e)}")
+            raise
+
+    async def get_user_profile(self, db: AsyncSession, user_id: int) -> UserProfile:
+        """Get detailed user profile with statistics"""
+        user = await self.get_user_by_id(db, user_id)
+        if not user:
+            raise UserNotFoundError()
     async def verify_email(self, db: AsyncSession, token: str):
         user = await db.execute(select(User).where(User.email_verification_token == token))
         user = user.scalar_one_or_none()

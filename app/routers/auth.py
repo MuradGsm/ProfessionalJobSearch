@@ -86,3 +86,28 @@ async def login(
             detail=f"Login failed: {str(e)}"
         )
 
+@router.get("/me", response_model=UserResponse)
+async def get_current_user_info(
+    current_user: UserResponse = Depends(get_current_user)
+):
+    """Get current user information"""
+    return current_user
+
+@router.post("/logout")
+async def logout_user(
+    request: Request,
+    current_user: UserResponse = Depends(get_current_user),
+    db: AsyncSession = Depends(get_session)
+):
+    """Logout user (for logging purposes)"""
+    ip_address = await get_client_ip(request)
+    
+    # Log logout
+    await audit_service.log_user_action(
+        db=db,
+        user_id=current_user.id,
+        action="logout",
+        ip_address=ip_address
+    )
+    
+    return {"message": "Logged out successfully"}

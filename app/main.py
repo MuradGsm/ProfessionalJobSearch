@@ -12,7 +12,7 @@ from app.config.error_handler import (
     app_exception_handler,
     http_exception_handler,
     general_exception_handler,
-    validation_exception_handler  # Добавлен новый обработчик
+    validation_exception_handler  
 )
 from app.config.exceptions import BaseAppException
 from app.config.middleware import rate_limit_middleware
