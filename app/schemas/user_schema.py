@@ -29,7 +29,7 @@ class TokenResponse(BaseModel):
     refresh_token: str
     token_type: str = "bearer"
     expires_in: int = Field(description="Token expiration time in seconds")
-    user: "UserResponse" = Field(description="User information")
+    user: "UserResponse"  
 
 # ===== USER RESPONSE & PROFILE =====
 class UserResponse(BaseModel):
@@ -44,6 +44,7 @@ class UserResponse(BaseModel):
     last_login: Optional[datetime] = None
     created_at: datetime
     updated_at: datetime
+    company_id: Optional[int] = None
 
     model_config = ConfigDict(from_attributes=True) 
 
@@ -64,10 +65,13 @@ class UserProfile(BaseModel):
     updated_at: datetime
     
     # Statistics
-    total_applications: int = 0
-    total_resumes: int = 0
-    unread_notifications: int = 0
-    unread_messages: int = 0
+    stats: dict = Field(default_factory=lambda: {
+        "total_applications": 0,
+        "total_resumes": 0,
+        "unread_notifications": 0,
+        "unread_messages": 0
+    })
+
 
     model_config = ConfigDict(from_attributes=True)
 

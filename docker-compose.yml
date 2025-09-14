@@ -26,6 +26,7 @@ services:
     networks:
       - backend
 
+
   redis:  
     image: redis:7-alpine
     ports:
@@ -41,6 +42,7 @@ volumes:
     driver: local
   redisdata:  
     driver: local
+
 
 networks:
   backend:

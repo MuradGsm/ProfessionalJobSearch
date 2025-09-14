@@ -67,11 +67,12 @@ class User(Base):
         cascade="all, delete-orphan"
     )
     
-    company_membership: Mapped[Optional["CompanyMember"]] = relationship("CompanyMember", back_populates="user")
+    company_membership: Mapped[Optional["CompanyMember"]] = relationship("CompanyMember", back_populates="user", lazy="selectin")
     owned_company: Mapped[Optional["Company"]] = relationship(
         "Company",
         foreign_keys="Company.owner_id",
-        back_populates="owner"  # Changed from "users" to "owner"
+        back_populates="owner" ,
+        lazy="selectin"
     )
 
     __table_args__ = (

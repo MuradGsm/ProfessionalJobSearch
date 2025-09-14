@@ -13,7 +13,7 @@ engine = create_async_engine(
     max_overflow=30,      
     pool_timeout=30,      
     pool_recycle=3600,    
-    pool_pre_ping=True,   
+    # pool_pre_ping=True,   
 )
 async_session = async_sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)
 
