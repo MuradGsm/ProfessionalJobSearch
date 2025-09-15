@@ -231,5 +231,13 @@ class UserService:
         user.is_active = False
         db.add(user)
         await db.commit()
+    
+    async def change_password_service(self, data: ChangePasswordRequest, db: AsyncSession, user: User):
+        if not user.verify_password(data.current_password):
+            raise InvalidCredentialsError('Old password incorrect')
+        
+        user.set_password(data.new_password)
+        db.add(user)
+        await db.commit()
 
 user_service = UserService()
