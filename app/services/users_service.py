@@ -224,5 +224,12 @@ class UserService:
         db.add(user)
         await db.commit()
 
+    async def delete_user_service(self, db: AsyncSession, user: User):
+        if user.is_active == False:
+            raise AccountLockedError('accaount is not active')
+        
+        user.is_active = False
+        db.add(user)
+        await db.commit()
 
 user_service = UserService()

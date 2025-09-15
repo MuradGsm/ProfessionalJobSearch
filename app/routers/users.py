@@ -1,22 +1,16 @@
-# from fastapi import APIRouter, Depends
-# from sqlalchemy.ext.asyncio import AsyncSession
-# from app.db.database import get_session
-# from app.services.users_service import (get_all_users_service, 
-#                                         get_user_service)
-# from app.schemas.user_schema import UserResponse
-# from app.utils.required import admin_required
-# from typing import List
+from fastapi import APIRouter, Depends
+from sqlalchemy.ext.asyncio import AsyncSession
+from app.db.database import get_session
+from app.auth.deps import get_current_user
+from app.models.users_model import User
+from app.services.users_service import user_service
 
-# router = APIRouter(prefix='/users', tags=['users'])
+router = APIRouter()
 
-
-# @router.get('/', response_model=List[UserResponse])
-# async def get_all_users(
-#     session: AsyncSession = Depends(get_session),
-#     current_user: UserResponse = Depends(admin_required)
-#     ):
-#     return await get_all_users_service(session)
-
-# @router.get('/{user_id}', response_model=UserResponse)
-# async def get_user(user_id: int, session: AsyncSession = Depends(get_session)):
-#     return await get_user_service(user_id, session)
+@router.delete("/delete", status_code=204)
+async def delete_my_account(
+    db: AsyncSession = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+):
+    await user_service.delete_user_service(db, current_user)
+    return {"message": "Account successfully deleted"}
