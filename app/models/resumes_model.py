@@ -21,6 +21,7 @@ class Resume(Base):
     certifications: Mapped[list[str]] = mapped_column(ARRAY(String), default=[])
     languages: Mapped[list[str]] = mapped_column(ARRAY(String), default=[])
 
+    views: Mapped[list["ResumeView"]] = relationship("ResumeView", back_populates="resume")
     view_count: Mapped[int] = mapped_column(default=0)
     download_count: Mapped[int] = mapped_column(default=0)
 
@@ -44,3 +45,9 @@ class Resume(Base):
 
     def __repr__(self) -> str:
         return f"<Resume(id={self.id}, title={self.title}, user_id={self.user_id})>"
+
+class ResumeView(Base):
+    id: Mapped[pk_int]
+    resume: Mapped["Resume"] = relationship("Resume", back_populates="views")
+    viewer: Mapped["User"] = relationship("User", back_populates="resume_views")
+    

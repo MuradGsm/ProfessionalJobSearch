@@ -49,6 +49,7 @@ class User(Base):
     )
     
     resumes: Mapped[list["Resume"]] = relationship("Resume", back_populates="user", cascade="all, delete-orphan")
+    resume_views: Mapped[list["ResumeView"]] = relationship("ResumeView", back_populates="viewer")
     notifications: Mapped[list["Notification"]] = relationship("Notification", back_populates="user", cascade="all, delete-orphan")
     
     # Fixed: Removed string quotes from foreign_keys
