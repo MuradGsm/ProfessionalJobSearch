@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field, ConfigDict
-from typing import List
+from typing import List, Optional
 
 class ResumeBase(BaseModel):
     title: str = Field(..., min_length=1, max_length=100)
@@ -16,3 +16,9 @@ class ResumeResponse(ResumeBase):
     user_id: int
 
     model_config = ConfigDict(from_attributes=True)
+
+class ResumeUpdate(BaseModel):
+    title: Optional[str]
+    experience: Optional[str]
+    skills: Optional[List[str]]
+    is_public: Optional[bool]
