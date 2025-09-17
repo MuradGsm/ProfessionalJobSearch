@@ -5,7 +5,7 @@ from fastapi.exceptions import RequestValidationError
 import time
 import logging
 
-from app.routers import auth, email, passwords, users
+from app.routers import auth, email, passwords, users, resumes
 from app.config.setting import settings
 from app.config.lifespan import lifespan
 from app.config.error_handler import (
@@ -76,6 +76,8 @@ app.include_router(auth.router, prefix="/auth", tags=["Authentication"])
 app.include_router(email.router, prefix="/email", tags=["Email"])
 app.include_router(passwords.router, prefix="/password", tags=["Password"])
 app.include_router(users.router, prefix="/users", tags=["Users"])
+app.include_router(resumes.router, prefix="/resume", tags=["Resume"])
+
 
 
 

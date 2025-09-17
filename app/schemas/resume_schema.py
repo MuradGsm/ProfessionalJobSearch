@@ -3,7 +3,7 @@ from typing import List
 
 class ResumeBase(BaseModel):
     title: str = Field(..., min_length=1, max_length=100)
-    experience: str = Field(..., min_length=10)
+    experience: str = Field(..., min_length=5)
     skills: List[str] = Field(..., min_length=1)  
     is_default: bool = False
     is_public: bool = True

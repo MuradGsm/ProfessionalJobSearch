@@ -40,7 +40,6 @@ class Resume(Base):
         Index('idx_resume_skills', 'skills', postgresql_using='gin'),
         Index('idx_resume_languages', 'languages', postgresql_using='gin'),
         Index('idx_resume_deleted', 'deleted_at'),
-        UniqueConstraint('user_id', 'is_default', name='uq_user_default_resume'),
     )
 
     def __repr__(self) -> str:
@@ -48,6 +47,9 @@ class Resume(Base):
 
 class ResumeView(Base):
     id: Mapped[pk_int]
+    resume_id: Mapped[int] = mapped_column(ForeignKey("resume.id"), nullable=False)
+    viewer_id: Mapped[int] = mapped_column(ForeignKey("user.id"), nullable=False)
+
     resume: Mapped["Resume"] = relationship("Resume", back_populates="views")
     viewer: Mapped["User"] = relationship("User", back_populates="resume_views")
     
