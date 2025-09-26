@@ -27,6 +27,8 @@ class Resume(Base):
 
     pdf_url: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
     deleted_at: Mapped[Optional[datetime]] = mapped_column(nullable=True)
+    is_deleted: Mapped[bool] = mapped_column(Boolean, default=False, nullable=True)
+
 
     # Relationships
     user: Mapped["User"] = relationship("User", back_populates="resumes")

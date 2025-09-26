@@ -18,3 +18,7 @@ async def create_resume(data: ResumeCreate, db: AsyncSession = Depends(get_sessi
 @router.put('/{resume_id}', response_model=ResumeResponse)
 async def update_resume(resume_id: int, data: ResumeUpdate, db: AsyncSession = Depends(get_session), current_user: User = Depends(get_current_user)):
     return await resume_service.update_resume_service(resume_id, data, db, current_user)
+
+@router.delete('/{resume_id}')
+async def delete_resume(resume_id: int, db: AsyncSession = Depends(get_session), current_user: User = Depends(get_current_user)):
+    return await resume_service.delete_resume_service(resume_id, db, current_user)
