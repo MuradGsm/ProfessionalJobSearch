@@ -75,5 +75,25 @@ class ResumeService:
         return {'message': 'Delete resume is successfully'}
     
 
+    async def set_default_resume_service(self, resume_id: int, db: AsyncSession, current_user: User):
+        stmt = await db.execute(select(Resume).where(Resume.id == resume_id))
+        resume = stmt.scalar_one_or_none()
+
+        if not resume:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Resume not found')
+        if resume.user_id != current_user.id:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail='Method not allowed')
+        await db.execute(update(Resume).where(Resume.user_id == current_user.id).values(is_default=False))
+        resume.is_default = True
+        db.add(resume)
+        await db.commit()
+        return {'messgae': 'Default resume set succesfully'}
+    
+    async def get_my_resumes_service(self, db: AsyncSession, current_user: User):
+        stmt = await db.execute(select(Resume).where(and_(Resume.user_id == current_user.id, Resume.is_deleted == False)))
+        resumes = stmt.scalars().all()
+        return resumes
+
+
 
 resume_service = ResumeService()
